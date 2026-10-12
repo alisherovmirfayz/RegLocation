@@ -1,0 +1,32 @@
+name: Резервная копия базы данных
+
+# Ежедневно в 02:30 по Ташкенту (21:30 UTC) + ручной запуск (Actions → «Резервная копия базы данных» → Run workflow).
+# Нужен секрет репозитория BACKUP_DATABASE_URL — ВНЕШНЯЯ строка подключения к PostgreSQL
+# (Render: External Database URL; Railway: DATABASE_PUBLIC_URL). Необязательно: BACKUP_PASSPHRASE для шифрования.
+on:
+  schedule:
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then echo "Секрет BACKUP_DATABASE_URL не задан — пропуск"; exit 0; fi
+          FILE="reglocation-$(date -u +%Y-%m-%dT%H-%M).dump"
+          docker run --rm -e DATABASE_URL -v "$PWD:/out" postgres:16 sh -c "pg_dump --format=custom --no-owner --no-privileges \"\$DATABASE_URL\" > /out/$FILE"
+          if [ -n "$PASSPHRASE" ]; then
+            gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 "$FILE" && rm "$FILE"
+          fi
+          ls -lh reglocation-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reglocation-db-backup-${{ github.run_id }}
+          path: reglocation-*
+          retention-days: 30
+          if-no-files-found: ignore

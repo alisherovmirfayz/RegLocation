@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  monitor-backend:
+    name: Проект 1 — Monitor + Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: monitor-backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: reglocation_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/reglocation_test?schema=public
+      OCR_CACHE_PATH: ${{ github.workspace }}/.tessdata
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: monitor-backend/package-lock.json
+      - name: Кеш языковых данных OCR
+        uses: actions/cache@v4
+        with:
+          path: .tessdata
+          key: tessdata-eng-rus-v1
+      - run: npm ci
+      - name: Защита от разрушительных миграций
+        run: npm run check:migrations
+      - run: npm run typecheck
+      - name: Тесты (API, Socket.IO, OCR, граничные моменты времени)
+        run: npm test
+      - run: npm run build
+
+  teacher-director:
+    name: Проект 2 — Teacher + Director
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: teacher-director
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: teacher-director/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+  docker:
+    name: Проверка Docker-образов
+    runs-on: ubuntu-latest
+    needs: [monitor-backend, teacher-director]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t reglocation-monitor ./monitor-backend
+      - run: docker build -t reglocation-app ./teacher-director

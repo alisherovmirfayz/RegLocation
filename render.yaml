@@ -1,0 +1,82 @@
+# Render Blueprint: Dashboard → New → Blueprint → выберите этот репозиторий.
+# Создаёт PostgreSQL и два постоянно работающих веб-сервиса с автодеплоем из ветки main.
+# Бесплатные планы не подходят: free-сервисы «засыпают», а free-база удаляется через 30 дней.
+
+databases:
+  - name: reglocation-db
+    databaseName: reglocation
+    user: reglocation
+    plan: basic-256mb # платный план: постоянное хранение и ежедневные резервные копии
+    postgresMajorVersion: "16"
+    ipAllowList: [] # доступ только из внутренней сети Render
+
+services:
+  # Проект №1: backend + монитор ресепшена
+  - type: web
+    name: reglocation-monitor
+    runtime: docker
+    rootDir: monitor-backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /api/health
+    autoDeploy: true
+    branch: main
+    numInstances: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reglocation-db
+          property: connectionString
+      - key: PUBLIC_MONITOR_URL
+        value: https://reglocation-monitor.onrender.com # замените на https://monitor.ваш-домен после подключения домена
+      - key: PUBLIC_APP_URL
+        value: https://reglocation-app.onrender.com # замените на https://app.ваш-домен
+      - key: INITIAL_DIRECTOR_EMAIL
+        sync: false # укажите в панели Render
+      - key: MAIL_TRANSPORT
+        value: smtp
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: STORAGE_DRIVER
+        value: database
+      - key: TRUST_PROXY
+        value: "1"
+
+  # Проект №2: сайт учителя и кабинет директора
+  - type: web
+    name: reglocation-app
+    runtime: docker
+    rootDir: teacher-director
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /healthz
+    autoDeploy: true
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: API_UPSTREAM
+        fromService:
+          type: web
+          name: reglocation-monitor
+          property: hostport # внутренняя сеть Render, без выхода в интернет

@@ -1,0 +1,373 @@
+// RegLocation — схема базы данных PostgreSQL.
+// Изменения схемы выполняются только через миграции (prisma migrate dev → prisma/migrations).
+// В production применяется исключительно `prisma migrate deploy`, который никогда не сбрасывает данные.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DIRECTOR
+  TEACHER
+  RECEPTION
+}
+
+enum AccountStatus {
+  ACTIVE
+  BLOCKED
+  ARCHIVED
+}
+
+enum StaffKind {
+  TEACHER
+  DIRECTOR
+  HEAD_TEACHER
+}
+
+enum RoomType {
+  CLASSROOM
+  RECEPTION
+  TEACHERS_ROOM
+  DIRECTOR_OFFICE
+  HEAD_TEACHER_OFFICE
+  ACCOUNTING
+  STAIRS
+  ELEVATOR
+  CORRIDOR
+  GYM
+  LAB
+  CANTEEN
+  KITCHEN
+  OTHER
+}
+
+enum BuildingKind {
+  SCHOOL
+  CANTEEN
+}
+
+enum TimetableStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum CheckOutReason {
+  MANUAL
+  AUTO_END_OF_DAY
+  ADMIN
+}
+
+enum AssignmentMode {
+  UNTIL_LESSON_END
+  UNTIL_TIME
+  UNTIL_CANCELLED
+}
+
+enum VerificationPurpose {
+  OWNER_REGISTRATION
+  DIRECTOR_PASSWORD_RECOVERY
+}
+
+enum StorageDriver {
+  DATABASE
+  S3
+}
+
+/// Общая таблица учётных записей (директор, учитель, ресепшен).
+model User {
+  id            String        @id @default(uuid())
+  role          Role
+  login         String        @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  email         String?       @unique
+  status        AccountStatus @default(ACTIVE)
+  failedLogins  Int           @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  director         Director?
+  teacher          Teacher?
+  receptionAccount ReceptionAccount?
+  sessions         Session[]
+  auditLogs        AuditLog[]         @relation("AuditActor")
+  createdAssignments   ManualAssignment[] @relation("AssignmentCreatedBy")
+  cancelledAssignments ManualAssignment[] @relation("AssignmentCancelledBy")
+  uploadedFiles    StoredFile[]
+
+  @@index([role, status])
+}
+
+model Director {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Основной (первый) аккаунт директора, созданный при первичной регистрации.
+  isOwner   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Teacher {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind          StaffKind @default(TEACHER)
+  /// Предмет или должность в свободной форме, назначается директором.
+  positionTitle String
+  subjectId     String?
+  subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  avatarFileId  String?   @unique
+  avatarFile    StoredFile? @relation("TeacherAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  classes     TeacherClass[]
+  timetables  Timetable[]
+  attendance  Attendance[]
+  assignments ManualAssignment[]
+}
+
+model ReceptionAccount {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  createdAt DateTime @default(now())
+}
+
+/// Серверные сессии. В cookie хранится случайный токен, в базе — только его SHA-256.
+model Session {
+  id         String   @id @default(uuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role
+  csrfToken  String
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Subject {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  teachers Teacher[]
+}
+
+model SchoolClass {
+  id        String         @id @default(uuid())
+  /// Нормализованное имя класса, например "10A", "0A", "6B".
+  name      String         @unique
+  teachers  TeacherClass[]
+  entries   TimetableEntry[]
+}
+
+model TeacherClass {
+  teacherId String
+  classId   String
+  teacher   Teacher     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class     SchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, classId])
+}
+
+model Timetable {
+  id           String          @id @default(uuid())
+  teacherId    String
+  teacher      Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  status       TimetableStatus @default(DRAFT)
+  sourceFileId String?
+  sourceFile   StoredFile?     @relation("TimetableSource", fields: [sourceFileId], references: [id], onDelete: SetNull)
+  /// Отчёт распознавания: уверенность по ячейкам, предупреждения.
+  ocrReport    Json?
+  createdAt    DateTime        @default(now())
+  confirmedAt  DateTime?
+  entries      TimetableEntry[]
+
+  @@index([teacherId, status])
+}
+
+model TimetableEntry {
+  id           String       @id @default(uuid())
+  timetableId  String
+  timetable    Timetable    @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  /// 1 = понедельник … 6 = суббота
+  dayOfWeek    Int
+  lessonNumber Int
+  classId      String?
+  class        SchoolClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  className    String
+  roomId       String?
+  room         Room?        @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  roomLabel    String
+
+  @@unique([timetableId, dayOfWeek, lessonNumber])
+  @@index([roomId])
+}
+
+model Attendance {
+  id             String          @id @default(uuid())
+  teacherId      String
+  teacher        Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  /// Календарная дата по Asia/Tashkent в формате YYYY-MM-DD.
+  date           String
+  checkInAt      DateTime
+  checkOutAt     DateTime?
+  checkOutReason CheckOutReason?
+
+  @@index([teacherId, date])
+  @@index([date])
+  @@index([checkOutAt])
+}
+
+model Building {
+  id        String       @id @default(uuid())
+  kind      BuildingKind @unique
+  name      String
+  floors    Floor[]
+}
+
+model Floor {
+  id         String   @id @default(uuid())
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  name       String
+  level      Int
+  /// Порядок отображения на мониторе сверху вниз (меньше — выше).
+  sortOrder  Int
+  width      Int      @default(1000)
+  height     Int      @default(420)
+  rooms      Room[]
+  createdAt  DateTime @default(now())
+
+  @@index([buildingId, sortOrder])
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  floorId     String
+  floor       Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  /// Короткий код помещения: "404", "RECEPTION", "SPORT1" …
+  code        String   @unique
+  name        String
+  type        RoomType @default(CLASSROOM)
+  layout      RoomLayout?
+  entries     TimetableEntry[]
+  assignments ManualAssignment[]
+  createdAt   DateTime @default(now())
+}
+
+model RoomLayout {
+  id     String @id @default(uuid())
+  roomId String @unique
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  x      Int
+  y      Int
+  width  Int
+  height Int
+}
+
+/// Временное ручное назначение учителя в помещение. Не изменяет исходное расписание.
+model ManualAssignment {
+  id            String         @id @default(uuid())
+  teacherId     String
+  teacher       Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  roomId        String
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  mode          AssignmentMode
+  startsAt      DateTime       @default(now())
+  endsAt        DateTime?
+  note          String?
+  createdById   String?
+  createdBy     User?          @relation("AssignmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?          @relation("AssignmentCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now())
+
+  @@index([teacherId, cancelledAt])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actor       User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorRole   String
+  actorName   String
+  action      String
+  targetType  String?
+  targetId    String?
+  summary     String
+  details     Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+/// Файлы (аватарки, расписания, логотип). Хранятся в БД (bytea) или во внешнем S3-хранилище.
+model StoredFile {
+  id          String        @id @default(uuid())
+  purpose     String
+  mimeType    String
+  size        Int
+  sha256      String
+  driver      StorageDriver
+  objectKey   String?
+  data        Bytes?
+  ownerUserId String?
+  owner       User?         @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+
+  teacherAvatar Teacher?    @relation("TeacherAvatar")
+  timetables    Timetable[] @relation("TimetableSource")
+}
+
+/// Одноразовые коды подтверждения email (регистрация владельца, восстановление пароля).
+model EmailVerification {
+  id          String              @id @default(uuid())
+  purpose     VerificationPurpose
+  email       String
+  codeHash    String
+  payload     Json?
+  attempts    Int                 @default(0)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  ip          String?
+
+  @@index([purpose, email])
+}
+
+/// Настройки системы: расписание звонков, питание, монитор, тестовый режим.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+/// Единственная строка (id = 1) с глобальным состоянием системы.
+model SystemState {
+  id                     Int       @id @default(1)
+  /// Заполняется один раз атомарной операцией при регистрации владельца.
+  ownerDirectorId        String?   @unique
+  ownerRegisteredAt      DateTime?
+  lastAutoCheckoutDate   String?
+  updatedAt              DateTime  @updatedAt
+}

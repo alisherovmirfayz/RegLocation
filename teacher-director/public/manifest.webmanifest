@@ -1,0 +1,11 @@
+{
+  "name": "RegLocation — учитель",
+  "short_name": "RegLocation",
+  "start_url": "/teacher",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1d38b5",
+  "lang": "ru",
+  "icons": [{ "src": "/brand/logo.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }]
+}
