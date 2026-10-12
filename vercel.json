@@ -4,6 +4,7 @@
   "installCommand": "npm ci --prefix monitor-backend && npm ci --prefix teacher-director",
   "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "public",
+  "regions": ["fra1"],
   "functions": {
     "api/index.mjs": {
       "maxDuration": 300,
