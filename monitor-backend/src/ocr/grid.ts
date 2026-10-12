@@ -250,12 +250,19 @@ export function detectGrid(img: RawImage, opts: { darkThreshold?: number; minLin
         for (let y = y0; y <= y1; y += step) for (let x = x0; x <= x1; x += step) samples.push(y * W + x);
         const sorted = samples.map((i) => gray[i]!).sort((a, b) => a - b);
         const bg = sorted[Math.floor(sorted.length * 0.85)] ?? 255;
-        let rs = 0, gs = 0, bs = 0, n = 0, ink = 0;
-        const total = samples.length;
+        let rs = 0, gs = 0, bs = 0, n = 0, ink = 0, total = 0;
+        // Чернила ищем только во внутренней части: у краёв могут оказаться куски линий сетки
+        // (если граница столбца найдена со сдвигом в пару пикселей), и пустая ячейка выглядела бы заполненной.
+        const inset = Math.max(2, Math.round(Math.min(x1 - x0, y1 - y0) * 0.06));
         for (const i of samples) {
           const v = gray[i]!;
-          if (v < Math.min(bg - 45, 235)) ink++;
-          else if (v >= bg - 12) {
+          const sx = i % W;
+          const sy = (i - sx) / W;
+          const inner = sx >= x0 + inset && sx <= x1 - inset && sy >= y0 + inset && sy <= y1 - inset;
+          if (inner) total++;
+          if (v < Math.min(bg - 45, 235)) {
+            if (inner) ink++;
+          } else if (v >= bg - 12) {
             rs += img.data[i * 3]!;
             gs += img.data[i * 3 + 1]!;
             bs += img.data[i * 3 + 2]!;
