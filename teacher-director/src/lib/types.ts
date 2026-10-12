@@ -135,6 +135,7 @@ export interface Meal {
 export interface ScheduleSettings {
   lessons: LessonSlot[];
   meals: Meal[];
+  startOfDay: string;
   endOfDay: string;
   schoolDays: number[];
 }

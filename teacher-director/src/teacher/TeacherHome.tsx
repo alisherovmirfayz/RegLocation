@@ -71,7 +71,12 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
             >
               Я в школе
             </Button>
-            {state.checkInBlockedReason && <p className="mt-2 text-center text-sm text-slate-500">{state.checkInBlockedReason}</p>}
+            {state.checkInBlockedReason && (
+              <p className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+                <Clock className="h-4 w-4 shrink-0" />
+                {state.checkInBlockedReason}
+              </p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

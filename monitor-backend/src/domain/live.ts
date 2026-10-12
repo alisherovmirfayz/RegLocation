@@ -2,7 +2,7 @@ import type { Server as IOServer } from 'socket.io';
 import type { BuildingKind, RoomType, StaffKind } from '@prisma/client';
 import type { AppContext } from '../context';
 import { computeLocation, isAssignmentActive, type ComputedLocation, type SpecialRooms, type TimetableSlot } from './location';
-import { describePeriod, isDayEnded, parseHM, type Period } from './schedule';
+import { checkInBlock, describePeriod, isDayEnded, parseHM, type Period } from './schedule';
 import { SIMULATION_MAX_MS, type MonitorSettings } from './settings';
 import { toLocal } from '../lib/time';
 import { logger } from '../lib/logger';
@@ -346,9 +346,11 @@ export class LiveService {
       if (!t) return null;
     }
     const local = toLocal(realNow);
-    const present = dyn.present.has(teacherId);
-    const location = this.locate(st, t, present, dyn, { dayOfWeek: local.dayOfWeek, minutes: local.minutes, now: realNow }, schedule);
     const dayEnded = isDayEnded(schedule, local.minutes);
+    // С 17:00 учитель «Не в школе» сразу, даже если автоматический выход ещё не записан в базу
+    const present = dyn.present.has(teacherId) && !dayEnded;
+    const location = this.locate(st, t, present, dyn, { dayOfWeek: local.dayOfWeek, minutes: local.minutes, now: realNow }, schedule);
+    const blocked = checkInBlock(schedule, local.dayOfWeek, local.minutes);
     const todayLessons = t.timetable
       .filter((e) => e.dayOfWeek === local.dayOfWeek)
       .sort((a, b) => a.lessonNumber - b.lessonNumber)
@@ -376,8 +378,8 @@ export class LiveService {
       attendance: lastToday
         ? { checkInAt: lastToday.checkInAt.toISOString(), checkOutAt: lastToday.checkOutAt?.toISOString() ?? null, checkOutReason: lastToday.checkOutReason }
         : null,
-      canCheckIn: !present && !dayEnded,
-      checkInBlockedReason: !present && dayEnded ? 'Учебный день завершён. Отметка будет доступна завтра.' : null,
+      canCheckIn: !present && !blocked,
+      checkInBlockedReason: !present && blocked ? blocked.message : null,
       location,
       period: describePeriod(schedule, local.dayOfWeek, local.minutes),
       clock: { date: local.date, dayOfWeek: local.dayOfWeek, minutes: local.minutes, serverTime: realNow.toISOString() },

@@ -824,7 +824,7 @@ export function directorRouter(ctx: AppContext): Router {
       await ctx.settings.setSchedule(s);
       await audit(ctx, req, {
         action: 'settings.schedule',
-        summary: `Изменено расписание звонков: ${s.lessons.map((l) => `${l.number}) ${l.start}–${l.end}`).join(', ')}; конец дня ${s.endOfDay}`,
+        summary: `Изменено расписание звонков: ${s.lessons.map((l) => `${l.number}) ${l.start}–${l.end}`).join(', ')}; учебный день ${s.startOfDay}–${s.endOfDay}`,
         details: s as unknown as Prisma.InputJsonValue,
       });
       await ctx.live.changed({ staticData: true });

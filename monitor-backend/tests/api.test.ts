@@ -494,6 +494,43 @@ describe('Socket.IO', () => {
   });
 });
 
+describe('Учебный день 08:00–17:00', () => {
+  it('«Я в школе» до 08:00 и в выходной недоступна, с 08:00 — доступна; в 17:00 учитель сразу «Не в школе»', async () => {
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    await t.post('/api/teacher/check-out');
+
+    h.clock.set('2026-10-19', '06:30'); // понедельник, раньше начала дня
+    let s = (await t.get('/api/teacher/state')).body;
+    expect(s.canCheckIn).toBe(false);
+    expect(s.checkInBlockedReason).toBe('Учебный день ещё не начался. Отметка доступна с 08:00.');
+    let r = await t.post('/api/teacher/check-in');
+    expect(r.status).toBe(409);
+    expect(r.body.code).toBe('DAY_NOT_STARTED');
+
+    h.clock.set('2026-10-18', '10:00'); // воскресенье
+    r = await t.post('/api/teacher/check-in');
+    expect(r.body.code).toBe('DAY_OFF');
+    expect((await t.get('/api/teacher/state')).body.checkInBlockedReason).toBe('Сегодня выходной. Отметка доступна в учебные дни.');
+
+    h.clock.set('2026-10-19', '08:00');
+    expect((await t.get('/api/teacher/state')).body.canCheckIn).toBe(true);
+    expect((await t.post('/api/teacher/check-in')).status).toBe(200);
+
+    // Ровно в 17:00 — «Не в школе», даже если автоматический выход ещё не записан
+    h.clock.set('2026-10-19', '17:00');
+    s = (await t.get('/api/teacher/state')).body;
+    expect(s.present).toBe(false);
+    expect(s.checkInBlockedReason).toBe('Учебный день завершён в 17:00. Отметка будет доступна завтра.');
+    expect((await t.post('/api/teacher/check-in')).body.code).toBe('DAY_ENDED');
+    // Автоматический выход закрывает отметку в базе
+    expect(await h.server.ctx.live.autoCheckout()).toBeGreaterThanOrEqual(1);
+    const open = await prisma.attendance.count({ where: { teacherId, checkOutAt: null } });
+    expect(open).toBe(0);
+    h.clock.set('2026-10-12', '10:00');
+  });
+});
+
 describe('Обновления опросом (Vercel)', () => {
   const poll = (a: ReturnType<Harness['agent']>, role: string, query = '') => a.get(`/api/realtime/poll?role=${role}${query}`);
 

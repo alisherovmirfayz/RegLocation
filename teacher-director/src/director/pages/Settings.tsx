@@ -99,6 +99,9 @@ export function SettingsPage() {
           ))}
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <Field label="Начало учебного дня" hint="Раньше этого времени кнопка «Я в школе» недоступна">
+              <input className="input" type="time" value={s.startOfDay ?? '08:00'} onChange={(e) => setS({ startOfDay: e.target.value })} />
+            </Field>
             <Field label="Автоматический выход (конец дня)" hint="Все отметки «В школе» закрываются, повторная отметка — завтра">
               <input className="input" type="time" value={s.endOfDay} onChange={(e) => setS({ endOfDay: e.target.value })} />
             </Field>

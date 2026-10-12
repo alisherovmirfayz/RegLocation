@@ -21,6 +21,8 @@ export const ScheduleSettingsSchema = z
   .object({
     lessons: z.array(LessonSlotSchema).min(1).max(15),
     meals: z.array(MealSchema).max(4),
+    /** Начало учебного дня: раньше этого времени отметка «Я в школе» недоступна. */
+    startOfDay: HM.default('08:00'),
     endOfDay: HM,
     /** Учебные дни: 1 = понедельник … 6 = суббота */
     schoolDays: z.array(z.number().int().min(1).max(7)).min(1),
@@ -40,6 +42,7 @@ export const ScheduleSettingsSchema = z
     for (const m of s.meals) {
       if (parseHM(m.end) <= parseHM(m.start)) ctx.addIssue({ code: 'custom', message: `${m.title}: конец раньше начала` });
     }
+    if (parseHM(s.endOfDay) <= parseHM(s.startOfDay)) ctx.addIssue({ code: 'custom', message: 'Конец учебного дня должен быть позже начала' });
   });
 
 export type LessonSlot = z.infer<typeof LessonSlotSchema>;
@@ -62,6 +65,7 @@ export const DEFAULT_SCHEDULE: ScheduleSettings = {
     { key: 'lunch', title: 'Обед', start: '12:30', end: '13:15', enabled: true },
     { key: 'snack', title: 'Полдник', start: '15:45', end: '16:05', enabled: true },
   ],
+  startOfDay: '08:00',
   endOfDay: '17:00',
   schoolDays: [1, 2, 3, 4, 5, 6],
 };
@@ -94,6 +98,17 @@ export function activeMeal(s: ScheduleSettings, dayOfWeek: number, minutes: numb
 
 export function isDayEnded(s: ScheduleSettings, minutes: number): boolean {
   return minutes >= parseHM(s.endOfDay);
+}
+
+/**
+ * Можно ли сейчас отметиться «Я в школе»: только в учебный день с начала (08:00) до конца (17:00) учебного дня.
+ * Возвращает причину запрета или null.
+ */
+export function checkInBlock(s: ScheduleSettings, dayOfWeek: number, minutes: number): { code: string; message: string } | null {
+  if (!s.schoolDays.includes(dayOfWeek)) return { code: 'DAY_OFF', message: 'Сегодня выходной. Отметка доступна в учебные дни.' };
+  if (minutes < parseHM(s.startOfDay)) return { code: 'DAY_NOT_STARTED', message: `Учебный день ещё не начался. Отметка доступна с ${s.startOfDay}.` };
+  if (isDayEnded(s, minutes)) return { code: 'DAY_ENDED', message: `Учебный день завершён в ${s.endOfDay}. Отметка будет доступна завтра.` };
+  return null;
 }
 
 export function nextLesson(s: ScheduleSettings, dayOfWeek: number, minutes: number): LessonSlot | undefined {
