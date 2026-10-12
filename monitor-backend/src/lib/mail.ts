@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import type { AppConfig } from '../config';
 import { logger } from './logger';
+import { HttpError } from './errors';
 
 export interface MailMessage {
   to: string;
@@ -45,7 +46,21 @@ export function createMailer(config: AppConfig): Mailer {
   return {
     configured: true,
     send: async (m) => {
-      await transport.sendMail({ from: config.MAIL_FROM, ...m });
+      try {
+        await transport.sendMail({ from: config.MAIL_FROM, ...m });
+      } catch (e) {
+        // Ошибка почтового сервера — понятное сообщение вместо «Внутренней ошибки сервера»
+        const err = e as { code?: string; responseCode?: number; message?: string };
+        logger.error('Не удалось отправить письмо', { code: err.code, responseCode: err.responseCode, err: String(err.message ?? e) });
+        const auth = err.code === 'EAUTH' || /credentials|auth/i.test(String(err.message));
+        throw new HttpError(
+          503,
+          auth
+            ? 'Не удалось отправить письмо: почта сайта не настроена (неверный или отсутствующий SMTP_PASS — пароль приложения). Сообщите администратору сайта.'
+            : 'Не удалось отправить письмо с кодом. Повторите попытку через минуту.',
+          'MAIL_FAILED',
+        );
+      }
     },
   };
 }
