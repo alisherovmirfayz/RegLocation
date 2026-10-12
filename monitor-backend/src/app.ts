@@ -23,7 +23,7 @@ import { attachRealtime } from './realtime';
 import { seedDefaults } from './domain/seed';
 import { logger } from './lib/logger';
 
-export const VERSION = process.env.APP_VERSION ?? process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? 'dev';
+export const VERSION = process.env.APP_VERSION ?? process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'dev';
 
 export function createContext(config: AppConfig, overrides: { prisma?: PrismaClient; mailer?: Mailer; clock?: Clock } = {}): AppContext {
   const prisma = overrides.prisma ?? new PrismaClient();
