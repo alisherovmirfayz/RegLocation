@@ -10,3 +10,7 @@ coverage/
 *.tmp.*
 .DS_Store
 Thumbs.db
+
+# Vercel
+/public/
+/.vercel/

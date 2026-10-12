@@ -494,6 +494,82 @@ describe('Socket.IO', () => {
   });
 });
 
+describe('Обновления опросом (Vercel)', () => {
+  const poll = (a: ReturnType<Harness['agent']>, role: string, query = '') => a.get(`/api/realtime/poll?role=${role}${query}`);
+
+  it('сервер сообщает способ обновлений; опрос только с действующей сессией своей роли', async () => {
+    expect((await h.agent().get('/api/public/runtime')).body).toMatchObject({ realtime: 'socket', maxUploadMb: 15 });
+    expect((await poll(h.agent(), 'monitor')).status).toBe(401);
+    expect((await poll(director, 'monitor')).status).toBe(401); // сессия директора не даёт доступ как монитору
+    expect((await poll(director, 'admin')).status).toBe(400);
+  });
+
+  it('монитор: снимок передаётся только при изменении; отметка учителя видна при следующем опросе', async () => {
+    h.clock.set('2026-10-19', '10:00');
+    const m = h.agent();
+    await m.login('monitor', monitorCreds.login, monitorCreds.password);
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    await t.post('/api/teacher/check-out');
+
+    const first = await poll(m, 'monitor');
+    expect(first.status).toBe(200);
+    expect(findTeacher(first.body.state, teacherId).present).toBe(false);
+    const same = await poll(m, 'monitor', `&hash=${first.body.hash}`);
+    expect(same.body).toEqual({ hash: first.body.hash, state: null });
+
+    await t.post('/api/teacher/check-in');
+    const next = await poll(m, 'monitor', `&hash=${first.body.hash}`);
+    expect(next.body.hash).not.toBe(first.body.hash);
+    expect(findTeacher(next.body.state, teacherId).location.reason).toBe('LESSON');
+  });
+
+  it('учитель получает только своё состояние, директор — журнал и версию данных', async () => {
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    const ts = await poll(t, 'teacher');
+    expect(ts.body.state.teacher.id).toBe(teacherId);
+    expect(ts.body.state.buildings).toBeUndefined();
+    expect(ts.body.audits).toBeUndefined();
+
+    const d0 = await poll(director, 'director');
+    expect(d0.body.state.teachers.length).toBeGreaterThan(0);
+    expect(d0.body.audits).toBeUndefined();
+    await director.post('/api/director/teachers', { firstName: 'Опрос', lastName: 'Проверкин', positionTitle: 'История' });
+    const d1 = await poll(director, 'director', `&hash=${d0.body.hash}&after=${encodeURIComponent(d0.body.auditCursor)}`);
+    expect(d1.body.version).toBeGreaterThan(d0.body.version);
+    expect(d1.body.audits.some((a: { summary: string }) => a.summary.includes('Проверкин'))).toBe(true);
+    expect(d1.body.state.teachers.some((x: { lastName: string }) => x.lastName === 'Проверкин')).toBe(true);
+  });
+
+  it('несколько экземпляров сервера с общей базой: изменения видны везде без перезапуска', async () => {
+    const h2 = await startHarness({ reset: false });
+    try {
+      h2.clock.current = h.clock.current;
+      const m2 = h2.agent();
+      await m2.login('monitor', monitorCreds.login, monitorCreds.password);
+      const before = (await poll(m2, 'monitor')).body.state.teachers.length;
+      // Директор работает через первый экземпляр
+      await director.post('/api/director/teachers', { firstName: 'Второй', lastName: 'Экземпляров', positionTitle: 'География' });
+      const after = (await poll(m2, 'monitor')).body.state;
+      expect(after.teachers.length).toBe(before + 1);
+      expect(after.teachers.some((x: { lastName: string }) => x.lastName === 'Экземпляров')).toBe(true);
+      // Настройки монитора тоже обновляются на втором экземпляре
+      const s = (await director.get('/api/director/settings')).body.monitor;
+      await director.put('/api/director/settings/monitor', { ...s, idleAfterSeconds: 123 });
+      expect((await poll(m2, 'monitor')).body.state.monitor.idleAfterSeconds).toBe(123);
+      await director.put('/api/director/settings/monitor', s);
+    } finally {
+      await h2.close();
+    }
+  });
+
+  it('ежедневная задача Vercel Cron защищена секретом', async () => {
+    expect((await h.agent().get('/api/cron/daily')).status).toBe(401);
+    expect((await h.agent().get('/api/cron/daily').set('Authorization', 'Bearer guessed-secret')).status).toBe(401);
+  });
+});
+
 describe('Сохранение данных после перезапуска', () => {
   it('после перезапуска сервера данные на месте, сессии действуют', async () => {
     const cookieDirector = director.cookie;

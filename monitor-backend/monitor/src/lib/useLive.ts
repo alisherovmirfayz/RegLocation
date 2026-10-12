@@ -39,8 +39,53 @@ const describeEvents = (prev: Snapshot, next: Snapshot, makeId: () => number): L
   return out.length > 6 ? out.filter((e) => e.kind === 'period') : out;
 };
 
+/** Учебное время — частый опрос; ночью и в выходные — редкий (бесплатная база успевает «уснуть»). */
+export function pollDelay(s: Snapshot | null): number {
+  if (document.visibilityState !== 'visible') return 60_000;
+  if (!s) return 5_000;
+  const quiet = s.period.kind === 'DAY_ENDED' || s.period.kind === 'DAY_OFF' || s.day?.isSchoolDay === false || s.clock.minutes < 6 * 60 + 30;
+  return quiet && !s.clock.simulated ? 30 * 60_000 : 5_000;
+}
+
+/** Опрос /api/realtime/poll: сервер отдаёт снимок только если он изменился. */
+function startPolling(apply: (s: Snapshot) => void, setConnection: (c: ConnectionState) => void, onUnauthorized: () => void) {
+  let hash = '';
+  let last: Snapshot | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+  const tick = async () => {
+    if (stopped) return;
+    if (timer) clearTimeout(timer);
+    try {
+      const r = await api<{ hash: string; state: Snapshot | null }>(`/api/realtime/poll?role=monitor&hash=${hash}`);
+      hash = r.hash;
+      if (r.state) {
+        last = r.state;
+        apply(r.state);
+      }
+      setConnection('online');
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return onUnauthorized();
+      setConnection(navigator.onLine ? 'reconnecting' : 'offline');
+    }
+    if (!stopped) timer = setTimeout(tick, pollDelay(last));
+  };
+  const wake = () => {
+    if (document.visibilityState === 'visible') void tick();
+  };
+  window.addEventListener('online', wake);
+  document.addEventListener('visibilitychange', wake);
+  void tick();
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    window.removeEventListener('online', wake);
+    document.removeEventListener('visibilitychange', wake);
+  };
+}
+
 /**
- * Подписка на состояние монитора через Socket.IO.
+ * Подписка на состояние монитора через Socket.IO (или опросом на Vercel).
  * При обрыве связи — автоматическое переподключение и запрос актуального снимка; резервный HTTP-опрос.
  */
 export function useLive(onUnauthorized: () => void) {
@@ -66,6 +111,17 @@ export function useLive(onUnauthorized: () => void) {
       setReceivedAt(Date.now());
     };
 
+    let stopPolling: (() => void) | null = null;
+    let disposed = false;
+    // Хостинг без постоянных соединений (Vercel): обновления опросом
+    void api<{ realtime: 'socket' | 'poll' }>('/api/public/runtime')
+      .then((rt) => {
+        if (rt.realtime !== 'poll' || disposed) return;
+        socket.close();
+        stopPolling = startPolling(apply, setConnection, () => unauthorizedRef.current());
+      })
+      .catch(() => undefined);
+
     const socket = io({ path: '/socket.io', auth: { role: 'monitor' }, withCredentials: true, transports: ['websocket', 'polling'] });
     socketRef.current = socket;
     socket.on('connect', () => {
@@ -84,7 +140,7 @@ export function useLive(onUnauthorized: () => void) {
 
     // Резервный опрос, если WebSocket недоступен
     const poll = setInterval(async () => {
-      if (socket.connected) return;
+      if (socket.connected || stopPolling) return;
       try {
         apply(await api<Snapshot>('/api/monitor/snapshot'));
       } catch (e) {
@@ -93,7 +149,7 @@ export function useLive(onUnauthorized: () => void) {
     }, 30_000);
 
     const resync = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !stopPolling) {
         if (socket.connected) socket.emit('sync');
         else socket.connect();
       }
@@ -101,6 +157,8 @@ export function useLive(onUnauthorized: () => void) {
     window.addEventListener('online', resync);
     document.addEventListener('visibilitychange', resync);
     return () => {
+      disposed = true;
+      stopPolling?.();
       clearInterval(poll);
       window.removeEventListener('online', resync);
       document.removeEventListener('visibilitychange', resync);

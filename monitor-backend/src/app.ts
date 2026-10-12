@@ -18,7 +18,7 @@ import { originGuard } from './auth/sessions';
 import { authRouter } from './routes/auth';
 import { directorRouter } from './routes/director';
 import { teacherRouter } from './routes/teacher';
-import { filesRouter, monitorRouter, publicRouter } from './routes/misc';
+import { cronRouter, filesRouter, monitorRouter, publicRouter, realtimeRouter } from './routes/misc';
 import { attachRealtime } from './realtime';
 import { seedDefaults } from './domain/seed';
 import { logger } from './lib/logger';
@@ -40,6 +40,7 @@ export function createContext(config: AppConfig, overrides: { prisma?: PrismaCli
     io: null,
   };
   live.attach(ctx);
+  ctx.settings.onChange = () => live.bumpVersion();
   return ctx;
 }
 
@@ -114,7 +115,19 @@ export function createApp(ctx: AppContext): Express {
   app.get('/healthz', health);
 
   app.use('/api', cors(ctx), originGuard(ctx), express.json({ limit: '1mb' }));
+  // Сверка кеша с версией данных в базе; без постоянного планировщика (Vercel) — заодно автоуход в 17:00
+  app.use('/api', async (_req, _res, next) => {
+    try {
+      await ctx.live.syncVersion();
+      if (ctx.config.REALTIME === 'poll') await ctx.live.maintain();
+    } catch (e) {
+      logger.warn('Не удалось сверить версию данных', { err: String(e) });
+    }
+    next();
+  });
   app.use('/api/public', publicRouter(ctx));
+  app.use('/api/realtime', realtimeRouter(ctx));
+  app.use('/api/cron', cronRouter(ctx));
   app.use('/api/auth', authRouter(ctx));
   app.use('/api/director', directorRouter(ctx));
   app.use('/api/teacher', teacherRouter(ctx));

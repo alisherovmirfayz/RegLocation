@@ -120,9 +120,53 @@ export class LiveService {
     this.io = io;
   }
 
-  /** Сбросить кеш статических данных (кабинеты, учителя, расписания). */
+  /** Сбросить кеш статических данных (кабинеты, учителя, расписания) только в этом экземпляре. */
   invalidate() {
     this.staticData = null;
+  }
+
+  private seenVersion = -1;
+  private lastMaintenance = 0;
+
+  /**
+   * Данные изменились: увеличиваем версию в базе. Остальные экземпляры сервера
+   * (на Vercel их может быть несколько) увидят новую версию и перечитают кеш.
+   */
+  async bumpVersion() {
+    this.invalidate();
+    await this.ctx.prisma.systemState.upsert({ where: { id: 1 }, create: { id: 1, dataVersion: 1 }, update: { dataVersion: { increment: 1 } } });
+  }
+
+  /** Сверка с версией данных в базе: при расхождении сбрасываем кеш учителей/кабинетов и настроек. */
+  async syncVersion() {
+    const row = await this.ctx.prisma.systemState.findUnique({ where: { id: 1 }, select: { dataVersion: true } });
+    const v = row?.dataVersion ?? 0;
+    if (v === this.seenVersion) return;
+    if (this.seenVersion !== -1) {
+      this.invalidate();
+      this.ctx.settings.invalidate();
+    }
+    this.seenVersion = v;
+  }
+
+  /**
+   * Обслуживание без постоянно работающего планировщика (Vercel): автоматический выход после 17:00
+   * и выключение просроченного тестового режима. Выполняется не чаще раза в 30 секунд на экземпляр.
+   */
+  async maintain(force = false) {
+    const now = Date.now();
+    if (!force && now - this.lastMaintenance < 30_000) return;
+    this.lastMaintenance = now;
+    await this.autoCheckout();
+    await this.expireSimulation();
+  }
+
+  private async expireSimulation() {
+    const sim = await this.ctx.settings.simulation();
+    if (sim && this.ctx.clock.now().getTime() - new Date(sim.startedAt).getTime() > SIMULATION_MAX_MS) {
+      await this.ctx.settings.setSimulation(null);
+      logger.info('Тестовый режим автоматически выключен по таймауту');
+    }
   }
 
   private async loadStatic(): Promise<StaticData> {
@@ -406,12 +450,9 @@ export class LiveService {
     if (this.ticking) return;
     this.ticking = true;
     try {
+      await this.syncVersion();
       await this.autoCheckout();
-      const sim = await this.ctx.settings.simulation();
-      if (sim && this.ctx.clock.now().getTime() - new Date(sim.startedAt).getTime() > SIMULATION_MAX_MS) {
-        await this.ctx.settings.setSimulation(null);
-        logger.info('Тестовый режим автоматически выключен по таймауту');
-      }
+      await this.expireSimulation();
       await this.publish(false);
     } catch (e) {
       logger.error('Ошибка планировщика', { err: String((e as Error)?.stack ?? e) });
@@ -447,8 +488,8 @@ export class LiveService {
 
   /** Вызывается после любых изменений данных. */
   async changed(opts: { staticData?: boolean } = {}) {
-    if (opts.staticData) this.invalidate();
     try {
+      if (opts.staticData) await this.bumpVersion();
       await this.publish(true);
     } catch (e) {
       logger.error('Ошибка рассылки состояния', { err: String(e) });

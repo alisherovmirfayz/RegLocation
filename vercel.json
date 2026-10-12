@@ -1,0 +1,61 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --prefix monitor-backend && npm ci --prefix teacher-director",
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 300,
+      "includeFiles": "monitor-backend/node_modules/{.prisma,@prisma/client,tesseract.js,tesseract.js-core,pdfjs-dist,heic-decode,libheif-js}/**"
+    }
+  },
+  "crons": [{ "path": "/api/cron/daily", "schedule": "30 12 * * *" }],
+  "redirects": [
+    { "source": "/", "destination": "/teacher", "permanent": false },
+    { "source": "/index.html", "destination": "/teacher", "permanent": true },
+    { "source": "/teacher.html", "destination": "/teacher", "permanent": true },
+    { "source": "/login.html", "destination": "/teacher", "permanent": true },
+    { "source": "/director.html", "destination": "/director", "permanent": true },
+    { "source": "/director-login.html", "destination": "/director/login", "permanent": true },
+    { "source": "/director-register.html", "destination": "/director/register", "permanent": true },
+    { "source": "/register.html", "destination": "/director/register", "permanent": true },
+    { "source": "/monitor.html", "destination": "/monitor", "permanent": true },
+    { "source": "/monitor-login.html", "destination": "/monitor/login", "permanent": true },
+    { "source": "/app.html", "destination": "/teacher", "permanent": true },
+    { "source": "/:dir(monitor|teacher|director)/:page*.html", "destination": "/:dir/:page*", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/healthz", "destination": "/api" },
+    { "source": "/monitor", "destination": "/monitor.html" },
+    { "source": "/monitor/:path*", "destination": "/monitor.html" },
+    { "source": "/teacher", "destination": "/app.html" },
+    { "source": "/teacher/:path*", "destination": "/app.html" },
+    { "source": "/director", "destination": "/app.html" },
+    { "source": "/director/:path*", "destination": "/app.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; img-src 'self' data: blob:; connect-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+        },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    },
+    {
+      "source": "/(monitor|app)\\.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}

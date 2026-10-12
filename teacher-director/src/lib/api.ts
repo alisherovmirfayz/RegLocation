@@ -39,9 +39,58 @@ async function request<T>(role: Role, method: string, path: string, body?: unkno
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401 && !path.includes('/login') && !path.includes('/session')) unauthorizedHandlers[role]?.();
-    throw new ApiError(res.status, data.error ?? `Ошибка ${res.status}`, data.code, data.details);
+    const fallback = res.status === 413 ? 'Файл слишком большой. Уменьшите его или сохраните как JPG/PDF меньшего размера.' : `Ошибка ${res.status}`;
+    throw new ApiError(res.status, data.error ?? fallback, data.code, data.details);
   }
+  // Данные изменены — при обновлениях опросом страница запрашивает новое состояние сразу
+  if (method !== 'GET') window.dispatchEvent(new Event('rl:changed'));
   return data as T;
+}
+
+export interface RuntimeInfo {
+  realtime: 'socket' | 'poll';
+  maxUploadMb: number;
+}
+let runtime: Promise<RuntimeInfo> | null = null;
+/** Возможности сервера: способ обновлений (Socket.IO или опрос на Vercel) и допустимый размер файла. */
+export function runtimeInfo(): Promise<RuntimeInfo> {
+  runtime ??= fetch('/api/public/runtime', { credentials: 'include' })
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((r: Partial<RuntimeInfo>) => ({ realtime: r.realtime === 'poll' ? 'poll' : 'socket', maxUploadMb: Number(r.maxUploadMb) || 15 }) as RuntimeInfo)
+    .catch(() => ({ realtime: 'socket', maxUploadMb: 15 }) as RuntimeInfo);
+  return runtime;
+}
+
+/**
+ * Если файл больше допустимого (на Vercel — 4 МБ), фото уменьшается в браузере до 3000 px по длинной стороне
+ * и сохраняется в JPEG: текст расписания остаётся читаемым. PDF и HEIC уменьшить в браузере нельзя — понятная ошибка.
+ */
+async function fitForUpload(file: File | Blob): Promise<File | Blob> {
+  const { maxUploadMb } = await runtimeInfo();
+  const max = maxUploadMb * 1024 * 1024;
+  if (file.size <= max) return file;
+  const name = file instanceof File ? file.name : 'image';
+  const tooBig = new ApiError(413, `Файл больше ${maxUploadMb} МБ. Сделайте скриншот или сохраните расписание как JPG/PDF меньшего размера.`);
+  if (!/^image\/(png|jpeg|webp|gif|bmp|avif)$/.test(file.type)) throw tooBig;
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw tooBig;
+  }
+  for (const [side, quality] of [[3000, 0.92], [2400, 0.88], [2000, 0.82]] as const) {
+    const k = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * k);
+    canvas.height = Math.round(bitmap.height * k);
+    const g = canvas.getContext('2d')!;
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/jpeg', quality));
+    if (blob && blob.size <= max) return new File([blob], name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  }
+  throw tooBig;
 }
 
 export function client(role: Role) {
@@ -51,9 +100,10 @@ export function client(role: Role) {
     put: <T>(p: string, b?: unknown) => request<T>(role, 'PUT', p, b ?? {}),
     patch: <T>(p: string, b?: unknown) => request<T>(role, 'PATCH', p, b ?? {}),
     del: <T>(p: string) => request<T>(role, 'DELETE', p),
-    upload: <T>(p: string, file: File | Blob, field = 'file') => {
+    upload: async <T>(p: string, file: File | Blob, field = 'file') => {
       const fd = new FormData();
-      fd.append(field, file);
+      const ready = await fitForUpload(file);
+      fd.append(field, ready, ready instanceof File ? ready.name : (file as File).name ?? 'file');
       return request<T>(role, 'POST', p, fd, true);
     },
   };

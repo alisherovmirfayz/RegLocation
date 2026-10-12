@@ -59,6 +59,10 @@ const EnvSchema = z.object({
   MAX_PDF_PAGES: z.coerce.number().int().positive().default(6),
 
   SCHEDULER_INTERVAL_MS: z.coerce.number().int().positive().default(10_000),
+  /** socket — постоянное соединение Socket.IO (Railway, Render, Docker); poll — опрос (Vercel и другие serverless). */
+  REALTIME: z.enum(['socket', 'poll']).default('socket'),
+  /** Секрет для ежедневной задачи Vercel Cron (/api/cron/daily). */
+  CRON_SECRET: z.string().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 

@@ -369,5 +369,7 @@ model SystemState {
   ownerDirectorId        String?   @unique
   ownerRegisteredAt      DateTime?
   lastAutoCheckoutDate   String?
+  /// Растёт при изменении учителей, расписаний и кабинетов — по нему все экземпляры сервера обновляют кеш.
+  dataVersion            Int       @default(0)
   updatedAt              DateTime  @updatedAt
 }

@@ -84,8 +84,9 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
       toast('error', 'Загрузите PDF или изображение: PNG, JPG, HEIC, WEBP, TIFF, BMP, GIF');
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      toast('error', 'Файл больше 15 МБ');
+    // Слишком большие фото уменьшаются автоматически при загрузке (см. lib/api.ts)
+    if (file.size > 60 * 1024 * 1024) {
+      toast('error', 'Файл слишком большой (больше 60 МБ)');
       return;
     }
     setBusy('ocr');
@@ -210,7 +211,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
             <div className="text-sm text-slate-500">
               {busy === 'ocr'
                 ? 'Ищем таблицу, дни недели, классы и кабинеты. Обычно 5–30 секунд.'
-                : 'PDF (в т.ч. многостраничный), фото или скриншот: PNG, JPG, HEIC (iPhone), WEBP, TIFF, BMP, GIF — до 15 МБ. Результат можно проверить и исправить перед сохранением.'}
+                : 'PDF (в т.ч. многостраничный), фото или скриншот: PNG, JPG, HEIC (iPhone), WEBP, TIFF, BMP, GIF. Большие фото уменьшаются автоматически. Результат можно проверить и исправить перед сохранением.'}
             </div>
           </div>
           <Button onClick={() => fileRef.current?.click()} loading={busy === 'ocr'} icon={<ImageIcon className="h-4 w-4" />}>

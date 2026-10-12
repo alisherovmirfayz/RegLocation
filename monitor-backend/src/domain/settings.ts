@@ -42,6 +42,8 @@ export interface EffectiveTime extends LocalTime {
 
 export class SettingsService {
   private cache = new Map<string, unknown>();
+  /** Вызывается после сохранения настройки — чтобы другие экземпляры сервера сбросили кеш. */
+  onChange: (() => Promise<void>) | null = null;
 
   constructor(private prisma: PrismaClient) {}
 
@@ -64,6 +66,7 @@ export class SettingsService {
       update: { value: value as object },
     });
     this.cache.set(key, value);
+    await this.onChange?.();
   }
 
   invalidate() {
