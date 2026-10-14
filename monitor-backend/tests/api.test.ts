@@ -126,7 +126,7 @@ describe('Учителя', () => {
     const r = await director.post('/api/director/teachers', { firstName: 'Алексей', lastName: 'Иванов', positionTitle: 'Математика', classes: ['10A', '6B', '1В'] });
     expect(r.status).toBe(201);
     expect(r.body.credentials.login).toBe('ivanov.a');
-    expect(r.body.credentials.password).toHaveLength(14);
+    expect(r.body.credentials.password).toMatch(/^([bdfgkmnprstvz][aeiu]){3}[2-9]{4}$/);
     expect(r.body.teacher.classes).toEqual(['1B', '6B', '10A']);
     teacherCreds = r.body.credentials;
     teacherId = r.body.teacher.id;
@@ -177,7 +177,7 @@ describe('Учителя', () => {
     expect((await h.agent().login('teacher', teacherCreds.login, teacherCreds.password)).status).toBe(403);
     await director.post(`/api/director/teachers/${teacherId}/unblock`);
     const reset = await director.post(`/api/director/teachers/${teacherId}/reset-password`);
-    expect(reset.body.credentials.password).toHaveLength(14);
+    expect(reset.body.credentials.password).toMatch(/^([bdfgkmnprstvz][aeiu]){3}[2-9]{4}$/);
     expect((await h.agent().login('teacher', teacherCreds.login, teacherCreds.password)).status).toBe(401);
     teacherCreds = reset.body.credentials;
     expect((await h.agent().login('teacher', teacherCreds.login, teacherCreds.password)).status).toBe(200);

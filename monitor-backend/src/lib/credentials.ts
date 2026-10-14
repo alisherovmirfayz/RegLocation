@@ -44,28 +44,18 @@ export async function generateUniqueLogin(
   throw new Error('Не удалось подобрать уникальный логин');
 }
 
-// Без похожих символов (0/O, 1/l/I), чтобы пароль было легко переписать с экрана.
-const ALPHA_LOWER = 'abcdefghijkmnpqrstuvwxyz';
-const ALPHA_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+// Простой для ввода пароль: три слога и четыре цифры (например, «kamidu4827»).
+// Без похожих символов (0/o, 1/l), только строчные буквы — легко переписать с листа и набрать на телефоне.
+const CONSONANTS = 'bdfgkmnprstvz';
+const VOWELS = 'aeiu';
 const DIGITS = '23456789';
-const SYMBOLS = '-_!@#';
 
-/** Надёжный случайный пароль (crypto.randomInt — CSPRNG). Энтропия ≈ 80+ бит при длине 14. */
-export function generatePassword(length = 14): string {
-  const all = ALPHA_LOWER + ALPHA_UPPER + DIGITS + SYMBOLS;
-  const chars = [
-    ALPHA_LOWER[randomInt(ALPHA_LOWER.length)]!,
-    ALPHA_UPPER[randomInt(ALPHA_UPPER.length)]!,
-    DIGITS[randomInt(DIGITS.length)]!,
-    SYMBOLS[randomInt(SYMBOLS.length)]!,
-  ];
-  while (chars.length < length) chars.push(all[randomInt(all.length)]!);
-  // Перемешивание Фишера — Йетса
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = randomInt(i + 1);
-    [chars[i], chars[j]] = [chars[j]!, chars[i]!];
-  }
-  return chars.join('');
+/** Случайный пароль (crypto.randomInt — CSPRNG): ≈ 28 бит; от подбора защищает блокировка входа после неудачных попыток. */
+export function generatePassword(): string {
+  let p = '';
+  for (let i = 0; i < 3; i++) p += CONSONANTS[randomInt(CONSONANTS.length)]! + VOWELS[randomInt(VOWELS.length)]!;
+  for (let i = 0; i < 4; i++) p += DIGITS[randomInt(DIGITS.length)]!;
+  return p;
 }
 
 export function randomToken(bytes = 32): string {

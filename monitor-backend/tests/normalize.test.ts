@@ -80,15 +80,11 @@ describe('Генерация логинов и паролей', () => {
     const login = await generateUniqueLogin('Алексей', 'Иванов', async (l) => taken.has(l));
     expect(login).toMatch(/^ivanov\.a\d+$/);
   });
-  it('надёжный пароль: длина, классы символов, случайность', () => {
+  it('простой пароль: три слога и четыре цифры, без похожих символов, случайный', () => {
     const seen = new Set<string>();
     for (let i = 0; i < 200; i++) {
       const p = generatePassword();
-      expect(p).toHaveLength(14);
-      expect(p).toMatch(/[a-z]/);
-      expect(p).toMatch(/[A-Z]/);
-      expect(p).toMatch(/\d/);
-      expect(p).toMatch(/[-_!@#]/);
+      expect(p).toMatch(/^([bdfgkmnprstvz][aeiu]){3}[2-9]{4}$/);
       expect(p).not.toMatch(/[0O1lI]/);
       seen.add(p);
     }
