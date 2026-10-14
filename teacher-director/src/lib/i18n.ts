@@ -371,7 +371,8 @@ const UZ: Record<string, string> = {
   'Поиск: ФИО, предмет, класс, кабинет': 'Qidiruv: F.I.Sh., fan, sinf, xona',
   'Предмет / должность': 'Fan / lavozim',
   'Предмет или должность': 'Fan yoki lavozim',
-  'Например: Математика, Английский язык, Директор, Завуч': 'Masalan: Matematika, Ingliz tili, Direktor, Zavuch',
+  'Например: Математика, Английский язык, Завуч': 'Masalan: Matematika, Ingliz tili, Zavuch',
+  'Завуч — в кабинете завуча (кроме обеда и полдника), учитель — по расписанию': 'Zavuch — zavuch xonasida (tushlik va tamaddidan tashqari), o‘qituvchi — jadval bo‘yicha',
   'Роль': 'Rol',
   'Роль на карте': 'Xaritadagi rol',
   'Определить по должности': 'Lavozim bo‘yicha aniqlash',
@@ -640,6 +641,12 @@ function translateTextNode(node: Text) {
 
 function translateElement(el: Element) {
   if (el.closest('[data-no-i18n]')) return;
+  // Подсказки поля ввода (<datalist>): показывается значение варианта — переводим его
+  if (el.tagName === 'OPTION' && el.parentElement?.tagName === 'DATALIST') {
+    const v = el.getAttribute('value');
+    const out = v && CYR.test(v) ? lookup(v) : null;
+    if (out !== null) el.setAttribute('value', out);
+  }
   for (const a of ATTRS) {
     const v = el.getAttribute(a);
     if (v && CYR.test(v)) {
