@@ -1,4 +1,5 @@
 import type { Server as IOServer } from 'socket.io';
+import { splitClasses } from '../ocr/normalize';
 import type { BuildingKind, RoomType, StaffKind } from '@prisma/client';
 import type { AppContext } from '../context';
 import { computeLocation, isAssignmentActive, type ComputedLocation, type SpecialRooms, type TimetableSlot } from './location';
@@ -234,7 +235,7 @@ export class LiveService {
         kind: t.kind,
         avatarUrl: avatarUrl(t.avatarFileId),
         // Классы берутся из действующего расписания (и из старых ручных записей, если они есть)
-        classes: [...new Set([...t.classes.map((c) => c.class.name), ...(t.timetables[0]?.entries ?? []).map((e) => e.className)])].sort(compareClasses),
+        classes: [...new Set([...t.classes.map((c) => c.class.name), ...(t.timetables[0]?.entries ?? []).flatMap((e) => splitClasses(e.className))])].sort(compareClasses),
         timetable: (t.timetables[0]?.entries ?? []).map((e) => ({
           dayOfWeek: e.dayOfWeek,
           lessonNumber: e.lessonNumber,

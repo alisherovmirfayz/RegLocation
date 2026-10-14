@@ -6,7 +6,6 @@ import { loadSession, logout, onUnauthorized, type SessionInfo } from '../lib/ap
 import { useSocket, type Connection } from '../lib/useSocket';
 import type { AuditRow, Snapshot } from '../lib/types';
 import { Logo } from '../components/Logo';
-import { Avatar } from '../components/Avatar';
 import { Badge, PageLoader, ThemeToggle } from '../components/ui';
 import { LangSwitch } from '../components/LangSwitch';
 import { DirectorLogin, DirectorRegister } from './Auth';
@@ -115,15 +114,6 @@ function Shell({ children }: { children: ReactNode }) {
             </a>
             <LangSwitch />
             <ThemeToggle />
-            <div className="flex items-center gap-2 rounded-xl px-2 py-1">
-              <Avatar name={session.user} url={null} size={32} ring={false} />
-              <div className="hidden leading-tight sm:block">
-                <div className="text-sm font-semibold">
-                  {session.user.lastName} {session.user.firstName}
-                </div>
-                <div className="text-xs text-slate-500">{session.isOwner ? 'Директор (владелец)' : 'Директор'}</div>
-              </div>
-            </div>
             <button
               onClick={async () => {
                 await logout('director');

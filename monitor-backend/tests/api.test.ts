@@ -507,8 +507,11 @@ describe('Стадион', () => {
     const t = h.agent();
     await t.login('teacher', teacherCreds.login, teacherCreds.password);
     const before = (await t.get('/api/teacher/timetable')).body.timetable?.entries ?? [];
-    const saved = await t.put('/api/teacher/timetable', { entries: [{ dayOfWeek: 1, lessonNumber: 2, className: '7B', roomLabel: 'Стадион' }] });
+    const saved = await t.put('/api/teacher/timetable', { entries: [{ dayOfWeek: 1, lessonNumber: 2, className: '7a,7В', roomLabel: 'Stadion' }] });
     expect(saved.status).toBe(200);
+    // Урок сразу у двух классов (физкультура): «7A, 7B»
+    expect(saved.body.timetable.entries[0].className).toBe('7A, 7B');
+    expect((await t.get('/api/teacher/state')).body.teacher.classes).toEqual(expect.arrayContaining(['7A', '7B']));
     await t.post('/api/teacher/check-in');
     const state = (await t.get('/api/teacher/state')).body;
     expect(state.location).toMatchObject({ reason: 'LESSON', buildingKind: 'SCHOOL', roomName: 'Стадион' });

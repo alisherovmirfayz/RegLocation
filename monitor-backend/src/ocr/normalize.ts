@@ -44,6 +44,13 @@ function cleanup(raw: string): string {
 
 export const MAX_CLASS_NUMBER = 11;
 
+/** «3A, 3B» → ['3A', '3B'] (урок сразу у нескольких классов, например физкультура). */
+export const splitClasses = (s: string) =>
+  s
+    .split(/\s*[,;/+&]\s*|\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+
 /**
  * Нормализует обозначение класса: «IOA» → «10A», «OA» → «0A», «68» → «6B», «lC» → «1C».
  * Формат: 1–2 цифры (0–11) + одна буква.

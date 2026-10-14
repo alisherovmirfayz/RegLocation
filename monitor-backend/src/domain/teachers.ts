@@ -1,4 +1,5 @@
 import type { Prisma, StaffKind } from '@prisma/client';
+import { splitClasses } from '../ocr/normalize';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { normalizeClass } from '../ocr/normalize';
@@ -71,7 +72,7 @@ export async function teacherListItem(ctx: AppContext, teacherIds?: string[]) {
     positionTitle: t.positionTitle,
     subject: t.subject?.name ?? null,
     kind: t.kind,
-    classes: [...new Set([...t.classes.map((c) => c.class.name), ...(t.timetables[0]?.entries ?? []).map((e) => e.className)])].sort(compareClasses),
+    classes: [...new Set([...t.classes.map((c) => c.class.name), ...(t.timetables[0]?.entries ?? []).flatMap((e) => splitClasses(e.className))])].sort(compareClasses),
     avatarUrl: avatarUrl(t.avatarFileId),
     present: t.attendance.length > 0,
     lastLoginAt: t.user.lastLoginAt,

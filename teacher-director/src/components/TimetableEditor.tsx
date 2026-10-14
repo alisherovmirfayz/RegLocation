@@ -128,7 +128,9 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
     const out = new Map<string, { classBad: boolean; roomBad: boolean }>();
     for (const [k, c] of cells) {
       if (!c.className && !c.roomLabel) continue;
-      out.set(k, { classBad: !CLASS_RE.test(normClass(c.className)), roomBad: !resolveRoom(c.roomLabel) });
+      // Один класс или несколько через запятую («3A, 3B» — например, физкультура)
+      const classes = normClass(c.className).split(/[,;/+&]/).filter(Boolean);
+      out.set(k, { classBad: !classes.length || !classes.every((x) => CLASS_RE.test(x)), roomBad: !resolveRoom(c.roomLabel) });
     }
     return out;
   }, [cells, roomCodes]);

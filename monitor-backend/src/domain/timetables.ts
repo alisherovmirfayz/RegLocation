@@ -2,13 +2,13 @@ import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import type { AppContext } from '../context';
 import { badRequest, notFound } from '../lib/errors';
-import { normalizeClass, normalizeRoom, type RoomRef } from '../ocr/normalize';
+import { normalizeClass, normalizeRoom, splitClasses, type RoomRef } from '../ocr/normalize';
 import { upsertClasses } from './teachers';
 
 export const EntryInputSchema = z.object({
   dayOfWeek: z.number().int().min(1).max(6),
   lessonNumber: z.number().int().min(1).max(15),
-  className: z.string().trim().min(1, 'Укажите класс').max(12),
+  className: z.string().trim().min(1, 'Укажите класс').max(40),
   roomLabel: z.string().trim().min(1, 'Укажите кабинет').max(40),
   roomId: z.string().uuid().optional().nullable(),
 });
@@ -18,6 +18,14 @@ export const SaveTimetableSchema = z.object({
   sourceFileId: z.string().uuid().optional().nullable(),
   ocrReport: z.record(z.unknown()).optional().nullable(),
 });
+
+
+/** Один класс («10A») или несколько через запятую («3A, 3B»); каждый проверяется отдельно. */
+export function normalizeClassList(raw: string): { value: string; valid: boolean } {
+  const parts = splitClasses(raw).map((p) => normalizeClass(p));
+  if (!parts.length || parts.some((p) => !p.valid)) return { value: raw.trim(), valid: false };
+  return { value: [...new Set(parts.map((p) => p.value))].join(', '), valid: true };
+}
 
 export async function roomRefs(ctx: AppContext): Promise<RoomRef[]> {
   return ctx.prisma.room.findMany({ select: { id: true, code: true, name: true } });
@@ -67,7 +75,7 @@ export async function saveTimetable(ctx: AppContext, teacherId: string, input: z
     seen.add(key);
     if (!lessonNumbers.has(e.lessonNumber)) errors.push(`Строка ${i + 1}: урока №${e.lessonNumber} нет в расписании звонков`);
     if (!schedule.schoolDays.includes(e.dayOfWeek)) errors.push(`Строка ${i + 1}: день ${e.dayOfWeek} не является учебным`);
-    const cls = normalizeClass(e.className);
+    const cls = normalizeClassList(e.className);
     if (!cls.valid) errors.push(`Строка ${i + 1}: некорректный класс «${e.className}»`);
     let roomId: string | null = null;
     let roomLabel = e.roomLabel;
@@ -90,7 +98,7 @@ export async function saveTimetable(ctx: AppContext, teacherId: string, input: z
   if (errors.length) throw badRequest(errors[0]!, errors);
 
   const result = await ctx.prisma.$transaction(async (tx) => {
-    const classIds = await upsertClasses(tx, [...new Set(prepared.map((p) => p.className))]);
+    const classIds = await upsertClasses(tx, [...new Set(prepared.flatMap((p) => splitClasses(p.className)))]);
     const classByName = new Map<string, string>();
     const classes = await tx.schoolClass.findMany({ where: { id: { in: classIds } } });
     for (const c of classes) classByName.set(c.name, c.id);
@@ -102,7 +110,7 @@ export async function saveTimetable(ctx: AppContext, teacherId: string, input: z
         sourceFileId: input.sourceFileId ?? null,
         ocrReport: (input.ocrReport ?? undefined) as Prisma.InputJsonValue | undefined,
         confirmedAt: new Date(),
-        entries: { create: prepared.map((p) => ({ ...p, classId: classByName.get(p.className) ?? null })) },
+        entries: { create: prepared.map((p) => ({ ...p, classId: classByName.get(splitClasses(p.className)[0]!) ?? null })) },
       },
       include: { entries: true },
     });
