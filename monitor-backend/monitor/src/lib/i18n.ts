@@ -350,8 +350,8 @@ const UZ: Record<string, string> = {
   'Загрузить фото или PDF расписания': 'Dars jadvali rasmi yoki PDF faylini yuklash',
   'Распознаём расписание…': 'Dars jadvali aniqlanmoqda…',
   'Ищем таблицу, дни недели, классы и кабинеты. Обычно 5–30 секунд.': 'Jadval, hafta kunlari, sinflar va xonalar qidirilmoqda. Odatda 5–30 soniya.',
-  'PDF (в т.ч. многостраничный), фото или скриншот: PNG, JPG, HEIC (iPhone), WEBP, TIFF, BMP, GIF. Большие фото уменьшаются автоматически. Результат можно проверить и исправить перед сохранением.':
-    'PDF (ko‘p sahifali ham), rasm yoki skrinshot: PNG, JPG, HEIC (iPhone), WEBP, TIFF, BMP, GIF. Katta rasmlar avtomatik kichraytiriladi. Natijani saqlashdan oldin tekshirib, tuzatish mumkin.',
+  'Результат можно проверить и исправить перед сохранением.':
+    'Natijani saqlashdan oldin tekshirib, tuzatish mumkin.',
   'Выбрать файл': 'Fayl tanlash',
   '(текст взят из PDF)': '(matn PDF dan olindi)',
   'Все значения прочитаны уверенно, но всё равно сверьте с оригиналом.': 'Barcha qiymatlar ishonchli o‘qildi, baribir asl nusxa bilan solishtiring.',

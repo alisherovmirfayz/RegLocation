@@ -219,7 +219,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
             <div className="text-sm text-slate-500">
               {busy === 'ocr'
                 ? 'Ищем таблицу, дни недели, классы и кабинеты. Обычно 5–30 секунд.'
-                : 'PDF (в т.ч. многостраничный), фото или скриншот: PNG, JPG, HEIC (iPhone), WEBP, TIFF, BMP, GIF. Большие фото уменьшаются автоматически. Результат можно проверить и исправить перед сохранением.'}
+                : 'Результат можно проверить и исправить перед сохранением.'}
             </div>
           </div>
           <Button onClick={() => fileRef.current?.click()} loading={busy === 'ocr'} icon={<ImageIcon className="h-4 w-4" />}>
