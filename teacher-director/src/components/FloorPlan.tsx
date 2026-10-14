@@ -121,7 +121,7 @@ type Box = { x1: number; y1: number; x2: number; y2: number };
 
 /**
  * Составная лестница (например, U-образная вокруг лифта): прямые марши со ступенями поперёк хода,
- * а на поворотах — плавный веер забежных ступеней из внутреннего угла.
+ * а на поворотах — свободная площадка без ступеней.
  */
 function StairChain({ chain }: { chain: Room[] }) {
   const STEP = 13;
@@ -179,25 +179,6 @@ function StairChain({ chain }: { chain: Room[] }) {
         );
       }
     }
-  });
-  // Веер забежных ступеней
-  turns.forEach(({ q, pivot }, ti) => {
-    const fx = near(pivot.x, q.x1, 1) ? q.x2 : q.x1, fy = near(pivot.y, q.y1, 1) ? q.y2 : q.y1;
-    const a0 = Math.atan2(0, fx - pivot.x), a1 = Math.atan2(fy - pivot.y, 0);
-    let da = a1 - a0;
-    if (da > Math.PI) da -= 2 * Math.PI;
-    if (da < -Math.PI) da += 2 * Math.PI;
-    const qw = q.x2 - q.x1, qh = q.y2 - q.y1;
-    const n = Math.max(3, Math.round(((Math.PI / 2) * Math.max(qw, qh)) / (STEP * 2.2)));
-    for (let k = 1; k < n; k++) {
-      const ang = a0 + (da * k) / n;
-      const c = Math.cos(ang), s = Math.sin(ang);
-      const t = Math.min(Math.abs(c) > 1e-6 ? qw / Math.abs(c) : Infinity, Math.abs(s) > 1e-6 ? qh / Math.abs(s) : Infinity) - 2;
-      els.push(<line key={`w${ti}-${k}`} x1={pivot.x} y1={pivot.y} x2={pivot.x + c * t} y2={pivot.y + s * t} className={LINE} strokeWidth={1.2} />);
-    }
-    // Границы поворота с прямыми маршами — тоже ступени
-    els.push(<line key={`wa${ti}`} x1={pivot.x} y1={pivot.y} x2={fx} y2={pivot.y} className={LINE} strokeWidth={1.2} />);
-    els.push(<line key={`wb${ti}`} x1={pivot.x} y1={pivot.y} x2={pivot.x} y2={fy} className={LINE} strokeWidth={1.2} />);
   });
   // Стены только снаружи лестницы: общие участки между пролётами не рисуются
   const walls: ReactNode[] = [];
@@ -316,7 +297,8 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
   const top = y + 34; // место для подписи
   let x1 = x + pad, y1 = top, x2 = x + w - pad, y2 = y + h - pad;
   // Полоса у двери свободна: мебель не попадает под створку
-  if (door && room.type !== 'GYM' && room.type !== 'STADIUM') {
+  const classroom = room.type === 'CLASSROOM' || room.type === 'LAB';
+  if (door && !classroom && room.type !== 'GYM' && room.type !== 'STADIUM') {
     const clear = doorGeom(door).len + 8;
     if (door.side === 'top') y1 = Math.max(y1, y + clear);
     if (door.side === 'bottom') y2 = Math.min(y2, y + h - clear);
@@ -324,6 +306,16 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
     if (door.side === 'right') x2 = Math.min(x2, x + w - clear);
   }
   const ix = x1, iw = x2 - x1, iy = y1, ih = y2 - y1;
+  // В классе свободно только место под створкой двери (с запасом)
+  const swing = door && doorGeom(door);
+  const doorBox =
+    !door || !swing ? null
+    : door.side === 'top' ? { x1: swing.along, x2: swing.along + swing.len, y1: y, y2: y + swing.len }
+    : door.side === 'bottom' ? { x1: swing.along, x2: swing.along + swing.len, y1: y + h - swing.len, y2: y + h }
+    : door.side === 'left' ? { x1: x, x2: x + swing.len, y1: swing.along, y2: swing.along + swing.len }
+    : { x1: x + w - swing.len, x2: x + w, y1: swing.along, y2: swing.along + swing.len };
+  const underDoor = (b: { x: number; y: number; width: number; height: number }) =>
+    !!doorBox && b.x < doorBox.x2 + 8 && b.x + b.width > doorBox.x1 - 8 && b.y < doorBox.y2 + 8 && b.y + b.height > doorBox.y1 - 8;
   // Лестница и лифт рисуются на всю площадь (подпись поверх), остальное — ниже подписи
   if ((iw < 30 || ih < 20) && room.type !== 'STAIRS' && room.type !== 'ELEVATOR') return null;
   const els: ReactNode[] = [];
@@ -349,21 +341,26 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
       els.push(<rect key="board" {...boardRect} rx={2} className="fill-emerald-600/70 dark:fill-emerald-500/50" />);
       const front = 24;
       const deskW = Math.min(46, U / 5);
-      els.push(<rect key="tdesk" {...at(U - deskW, 0, deskW, 14)} rx={3} className={FURN} strokeWidth={1} />);
-      const cols = Math.max(2, Math.min(5, Math.floor(U / 62)));
-      const rows = Math.max(1, Math.min(4, Math.floor((V - front) / 30)));
+      // Стол учителя у края доски, подальше от двери
+      const tdeskU = underDoor(at(U - deskW, 0, deskW, 14)) ? 0 : U - deskW;
+      els.push(<rect key="tdesk" {...at(tdeskU, 0, deskW, 14)} rx={3} className={FURN} strokeWidth={1} />);
+      const cols = Math.max(2, Math.min(8, Math.floor(U / 38)));
+      const rows = Math.max(1, Math.min(8, Math.floor((V - front) / 30)));
       const cw = U / cols;
       const rh = (V - front) / rows;
-      const dv = Math.min(14, rh * 0.42);
+      const dv = Math.min(12, rh * 0.4);
       for (let r = 0; r < rows; r++)
         for (let c = 0; c < cols; c++) {
           const u = c * cw + cw * 0.14, v = front + r * rh + rh * 0.18;
+          const box = at(u, v - 2, cw * 0.72, dv + 12);
+          if (underDoor(box)) continue;
           els.push(<rect key={`d${r}${c}`} {...at(u, v, cw * 0.72, dv)} rx={2.5} className={FURN} strokeWidth={1} />);
           const seat = at(u + cw * 0.36, v + dv + 5, 0, 0);
           els.push(<circle key={`c${r}${c}`} cx={seat.x} cy={seat.y} r={3.2} className="fill-slate-300 dark:fill-slate-600/70" />);
         }
-      if (room.type === 'LAB') {
-        const g = at(14, 12, 0, 0);
+      const gear = at(tdeskU === 0 ? U - 14 : 14, 12, 0, 0);
+      if (room.type === 'LAB' && !underDoor({ x: gear.x - 10, y: gear.y - 10, width: 20, height: 20 })) {
+        const g = gear;
         els.push(<circle key="gear" cx={g.x} cy={g.y} r={10} fill="none" className="stroke-cyan-500/70" strokeWidth={4} strokeDasharray="4 3" />);
         els.push(<circle key="gear2" cx={g.x} cy={g.y} r={3.5} className="fill-cyan-500/70" />);
       }
