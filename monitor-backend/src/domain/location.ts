@@ -10,7 +10,10 @@ export type LocationReason =
   | 'HEAD_TEACHER_OFFICE'
   | 'LESSON'
   | 'FREE'
-  | 'UNKNOWN_ROOM';
+  | 'UNKNOWN_ROOM'
+  | 'AWAY';
+
+export type AwayPlace = 'ON_SITE' | 'OFF_SITE';
 
 export interface TimetableSlot {
   dayOfWeek: number;
@@ -46,6 +49,8 @@ export interface LocationInput {
   timetable: TimetableSlot[];
   assignments: ActiveAssignment[];
   rooms: SpecialRooms;
+  /** «Отошёл»: куда и до какого момента (действует, пока не истёк срок) */
+  away?: { place: AwayPlace; until: Date } | null;
 }
 
 export interface ComputedLocation {
@@ -58,6 +63,9 @@ export interface ComputedLocation {
   lessonNumber?: number;
   mealKey?: 'lunch' | 'snack';
   assignmentId?: string;
+  awayPlace?: AwayPlace;
+  /** ISO-время, до которого учитель отошёл */
+  awayUntil?: string;
   nextLesson?: { number: number; start: string; className: string; roomLabel: string } | null;
 }
 
@@ -87,6 +95,7 @@ function findNext(input: LocationInput): ComputedLocation['nextLesson'] {
  * Единая функция определения расчётного местоположения сотрудника.
  * Приоритет:
  *  1) отсутствует → не показывается;
+ *  1а) учитель отметил «Отошёл» (на территории / за территорией школы) — до указанного времени;
  *  2–3) обед / полдник → столовая;
  *  4) действующее ручное назначение директора;
  *  5) директор → кабинет директора;
@@ -100,6 +109,10 @@ export function computeLocation(input: LocationInput): ComputedLocation {
 
   if (!input.present || isDayEnded(schedule, minutes)) {
     return { present: false, roomId: null, reason: 'ABSENT', nextLesson: next };
+  }
+
+  if (input.away && input.away.until > input.now) {
+    return { present: true, roomId: null, reason: 'AWAY', awayPlace: input.away.place, awayUntil: input.away.until.toISOString(), nextLesson: next };
   }
 
   const meal = activeMeal(schedule, dayOfWeek, minutes);

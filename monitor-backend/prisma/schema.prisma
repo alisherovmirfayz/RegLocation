@@ -60,6 +60,11 @@ enum TimetableStatus {
   ARCHIVED
 }
 
+enum AwayPlace {
+  ON_SITE
+  OFF_SITE
+}
+
 enum CheckOutReason {
   MANUAL
   AUTO_END_OF_DAY
@@ -233,6 +238,10 @@ model Attendance {
   checkInAt      DateTime
   checkOutAt     DateTime?
   checkOutReason CheckOutReason?
+  /// «Отошёл»: куда (на территории школы / за территорией) и до какого времени. Сбрасывается при выходе.
+  awayPlace      AwayPlace?
+  awayAt         DateTime?
+  awayUntil      DateTime?
 
   @@index([teacherId, date])
   @@index([date])

@@ -2,7 +2,7 @@ import type { Server as IOServer } from 'socket.io';
 import { splitClasses } from '../ocr/normalize';
 import type { BuildingKind, RoomType, StaffKind } from '@prisma/client';
 import type { AppContext } from '../context';
-import { computeLocation, isAssignmentActive, type ComputedLocation, type SpecialRooms, type TimetableSlot } from './location';
+import { computeLocation, isAssignmentActive, type AwayPlace, type ComputedLocation, type SpecialRooms, type TimetableSlot } from './location';
 import { checkInBlock, describePeriod, isDayEnded, parseHM, type Period } from './schedule';
 import { SIMULATION_MAX_MS, type MonitorSettings } from './settings';
 import { toLocal } from '../lib/time';
@@ -96,6 +96,7 @@ interface DynamicData {
   present: Set<string>;
   openAttendance: Map<string, { checkInAt: Date }>;
   assignments: Map<string, { id: string; roomId: string; startsAt: Date; endsAt: Date | null; cancelledAt: Date | null }[]>;
+  away: Map<string, { place: AwayPlace; until: Date }>;
 }
 
 export const avatarUrl = (fileId: string | null | undefined) => (fileId ? `/api/files/${fileId}` : null);
@@ -254,7 +255,7 @@ export class LiveService {
     const { prisma } = this.ctx;
     const today = toLocal(realNow).date;
     const [open, assignments] = await Promise.all([
-      prisma.attendance.findMany({ where: { date: today, checkOutAt: null }, select: { teacherId: true, checkInAt: true } }),
+      prisma.attendance.findMany({ where: { date: today, checkOutAt: null }, select: { teacherId: true, checkInAt: true, awayPlace: true, awayUntil: true } }),
       prisma.manualAssignment.findMany({
         where: { cancelledAt: null, OR: [{ endsAt: null }, { endsAt: { gt: realNow } }] },
         select: { id: true, teacherId: true, roomId: true, startsAt: true, endsAt: true, cancelledAt: true },
@@ -270,6 +271,7 @@ export class LiveService {
       present: new Set(open.map((o) => o.teacherId)),
       openAttendance: new Map(open.map((o) => [o.teacherId, { checkInAt: o.checkInAt }])),
       assignments: map,
+      away: new Map(open.filter((o) => o.awayPlace && o.awayUntil).map((o) => [o.teacherId, { place: o.awayPlace!, until: o.awayUntil! }])),
     };
   }
 
@@ -283,6 +285,7 @@ export class LiveService {
       schedule,
       timetable: t.timetable,
       assignments: dyn.assignments.get(t.id) ?? [],
+      away: dyn.away.get(t.id) ?? null,
       rooms: st.special,
     });
     const idx = loc.roomId ? st.roomIndex.get(loc.roomId) : undefined;
@@ -326,7 +329,8 @@ export class LiveService {
       period,
       buildings: st.buildings,
       teachers,
-      presentCount: teachers.filter((t) => t.present).length,
+      // Ушедшие за территорию школы не считаются «в школе»
+      presentCount: teachers.filter((t) => t.present && t.location.awayPlace !== 'OFF_SITE').length,
       totalCount: teachers.length,
       monitor,
       simulation: sim ? { enabled: true, assumeAllPresent: sim.assumeAllPresent } : null,

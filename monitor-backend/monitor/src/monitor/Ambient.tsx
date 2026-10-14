@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BookOpen, Clock, DoorOpen, Info, Sparkles, Users, Utensils } from 'lucide-react';
-import type { Snapshot, Teacher } from '../lib/types';
+import { awayText, type Snapshot, type Teacher } from '../lib/types';
 import { Avatar } from '../components/Avatar';
 
 const hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -52,6 +52,7 @@ const REASON: Record<string, string> = {
   DIRECTOR_OFFICE: 'Рабочий кабинет',
   HEAD_TEACHER_OFFICE: 'Рабочий кабинет',
   UNKNOWN_ROOM: 'Кабинет не найден в схеме',
+  AWAY: 'Отошёл',
 };
 
 export function SpotlightCard({ teacher, intervalMs = 9000 }: { teacher: Teacher | null; intervalMs?: number }) {
@@ -86,7 +87,7 @@ export function SpotlightCard({ teacher, intervalMs = 9000 }: { teacher: Teacher
                 <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-400">
                   <DoorOpen className="h-3.5 w-3.5" /> Где
                 </div>
-                <div className="truncate font-semibold">{teacher.location.roomName ?? '—'}</div>
+                <div className="truncate font-semibold">{teacher.location.reason === 'AWAY' ? awayText(teacher.location) : (teacher.location.roomName ?? '—')}</div>
               </div>
               <div className="bg-white/90 px-5 py-3 dark:bg-slate-900/90">
                 <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-400">

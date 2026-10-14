@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { MapPin, Search, Users, X } from 'lucide-react';
-import type { Teacher } from '../lib/types';
+import { DoorOpen, MapPin, Search, Users, X } from 'lucide-react';
+import { awayText, type Teacher } from '../lib/types';
 import { Avatar } from '../components/Avatar';
 
 const REASON_LABEL: Record<string, string> = {
@@ -12,6 +12,7 @@ const REASON_LABEL: Record<string, string> = {
   DIRECTOR_OFFICE: 'Кабинет директора',
   HEAD_TEACHER_OFFICE: 'Кабинет завуча',
   UNKNOWN_ROOM: 'Кабинет не найден в схеме',
+  AWAY: 'Отошёл',
 };
 
 export function TeacherList({
@@ -76,13 +77,19 @@ export function TeacherList({
                   : 'border-transparent bg-white/70 hover:border-brand-200 dark:bg-white/[0.04] dark:hover:border-white/10'
               }`}
             >
-              <Avatar name={t} url={t.avatarUrl} size={46} ring={false} className={t.present ? 'ring-2 ring-emerald-400/80' : 'grayscale'} />
+              <Avatar name={t} url={t.avatarUrl} size={46} ring={false} className={!t.present ? 'grayscale' : t.location.reason === 'AWAY' ? 'ring-2 ring-amber-400/80' : 'ring-2 ring-emerald-400/80'} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[15px] font-semibold leading-tight">
                   {t.lastName} {t.firstName}
                 </div>
                 <div className="truncate text-xs text-slate-500 dark:text-slate-400">{t.subject ?? t.positionTitle}</div>
-                {t.present ? (
+                {t.present && t.location.reason === 'AWAY' ? (
+                  <div className="mt-1">
+                    <span className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                      <DoorOpen className="h-3 w-3 shrink-0" /> {awayText(t.location)}
+                    </span>
+                  </div>
+                ) : t.present ? (
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span
                       title={REASON_LABEL[t.location.reason]}

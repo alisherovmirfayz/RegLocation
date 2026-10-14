@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, BookOpen, Clock, DoorOpen, Info, LogIn, LogOut, MapPin, School, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Clock, DoorOpen, Footprints, Info, LogIn, LogOut, MapPin, School, Trees, Undo2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { teacherApi } from '../lib/api';
-import { REASON_LABEL, KIND_LABEL, periodText, fmtTime, type TeacherState } from '../lib/types';
+import { REASON_LABEL, KIND_LABEL, awayText, periodText, fmtTime, type AwayPlace, type TeacherState } from '../lib/types';
 import { Avatar } from '../components/Avatar';
-import { Alert, Badge, Button, useToast } from '../components/ui';
+import { Alert, Badge, Button, Modal, useToast } from '../components/ui';
+
+/** Варианты «На сколько» для кнопки «Отошёл» (минуты) */
+const AWAY_DURATIONS = [5, 10, 15, 30, 45, 60, 90, 120, 180];
+const durationLabel = (m: number) => (m < 60 ? `${m} мин` : m % 60 ? `${Math.floor(m / 60)},5 ч` : `${m / 60} ч`);
 
 export function TeacherHome({ state, onState }: { state: TeacherState; onState: (s: TeacherState) => void }) {
   const toast = useToast();
@@ -13,6 +17,37 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
   const [busy, setBusy] = useState(false);
   const t = state.teacher;
   const loc = state.location;
+  const away = state.present && loc.reason === 'AWAY';
+  const [awayOpen, setAwayOpen] = useState(false);
+  const [awayPlace, setAwayPlace] = useState<AwayPlace>('ON_SITE');
+  const [awayMinutes, setAwayMinutes] = useState(15);
+
+  const goAway = async () => {
+    setBusy(true);
+    try {
+      const next = await teacherApi.post<TeacherState>('/api/teacher/away', { minutes: awayMinutes, place: awayPlace });
+      onState(next);
+      setAwayOpen(false);
+      toast('success', 'Отмечено: вы отошли');
+      if ('vibrate' in navigator) navigator.vibrate?.(30);
+    } catch (e) {
+      toast('error', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const comeBack = async () => {
+    setBusy(true);
+    try {
+      onState(await teacherApi.del<TeacherState>('/api/teacher/away'));
+      toast('success', 'Отмечено: вы вернулись');
+    } catch (e) {
+      toast('error', (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const toggle = async () => {
     setBusy(true);
@@ -54,8 +89,24 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
       {/* Кнопка присутствия: показывается только одна */}
       <AnimatePresence mode="wait" initial={false}>
         {state.present ? (
-          <motion.div key="out" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
-            <Button variant="secondary" size="lg" className="h-16 w-full !rounded-3xl text-lg" loading={busy} onClick={toggle} icon={<LogOut className="h-5 w-5" />}>
+          <motion.div key="out" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-3">
+            {away ? (
+              // Учитель отошёл: куда и до скольки, кнопка «Я вернулся»
+              <div className="rounded-3xl border border-amber-300/70 bg-amber-50 p-4 dark:border-amber-400/25 dark:bg-amber-500/10">
+                <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
+                  <Footprints className="h-5 w-5" /> Вы отошли
+                </div>
+                <div className="mt-1 text-sm text-amber-800 dark:text-amber-300">{awayText(loc)}</div>
+                <Button size="lg" variant="success" className="mt-3 h-14 w-full !rounded-2xl text-lg" loading={busy} onClick={comeBack} icon={<Undo2 className="h-5 w-5" />}>
+                  Я вернулся
+                </Button>
+              </div>
+            ) : (
+              <Button variant="warning" size="lg" className="h-14 w-full !rounded-3xl text-lg" disabled={busy} onClick={() => setAwayOpen(true)} icon={<Footprints className="h-5 w-5" />}>
+                Отошёл
+              </Button>
+            )}
+            <Button variant="secondary" size="lg" className="h-14 w-full !rounded-3xl text-lg" loading={busy} onClick={toggle} icon={<LogOut className="h-5 w-5" />}>
               Выйти из школы
             </Button>
           </motion.div>
@@ -89,8 +140,8 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
           </div>
           <AnimatePresence mode="wait">
             <motion.div key={`${loc.roomName}-${loc.reason}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className="mt-2 text-2xl font-bold">{state.present ? loc.roomName ?? '—' : '—'}</div>
-              <div className="mt-1 text-sm text-slate-500">{state.present ? REASON_LABEL[loc.reason] : 'Нажмите «Я в школе», когда придёте'}</div>
+              <div className="mt-2 text-2xl font-bold">{away ? REASON_LABEL.AWAY : state.present ? (loc.roomName ?? '—') : '—'}</div>
+              <div className="mt-1 text-sm text-slate-500">{away ? awayText(loc) : state.present ? REASON_LABEL[loc.reason] : 'Нажмите «Я в школе», когда придёте'}</div>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -178,6 +229,55 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Местоположение на мониторе — расчётное, по расписанию и назначениям директора. GPS не используется. В 17:00 отметка автоматически снимается.
       </p>
+
+      {/* «Отошёл»: куда и на сколько */}
+      <Modal open={awayOpen} onClose={() => setAwayOpen(false)} title="Отошёл">
+        <div className="space-y-5">
+          <div>
+            <div className="label">Куда</div>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ['ON_SITE', 'На территории школы', School],
+                  ['OFF_SITE', 'За территорию школы', Trees],
+                ] as const
+              ).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setAwayPlace(value)}
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center text-sm font-semibold transition ${
+                    awayPlace === value ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200' : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-white/10 dark:text-slate-300'
+                  }`}
+                >
+                  <Icon className="h-6 w-6" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="label">На сколько</div>
+            <div className="grid grid-cols-3 gap-2">
+              {AWAY_DURATIONS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setAwayMinutes(m)}
+                  className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition ${
+                    awayMinutes === m ? 'border-brand-500 bg-brand-600 text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-white/10 dark:text-slate-300'
+                  }`}
+                >
+                  {durationLabel(m)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button size="lg" className="h-14 w-full !rounded-2xl text-lg" loading={busy} onClick={goAway} icon={<Footprints className="h-5 w-5" />}>
+            {`Отошёл на ${durationLabel(awayMinutes)}`}
+          </Button>
+        </div>
+      </Modal>
     </motion.div>
   );
 }

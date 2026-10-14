@@ -5,7 +5,7 @@ import type { AppContext } from '../context';
 import { requireRole } from '../auth/sessions';
 import { ah, forbidden, notFound, parse } from '../lib/errors';
 import { assertFileType, processAvatar, uploader } from '../lib/upload';
-import { checkIn, checkOut } from '../domain/attendance';
+import { AWAY_MAX_MINUTES, AWAY_MIN_MINUTES, checkIn, checkOut, clearAway, setAway } from '../domain/attendance';
 import { getTimetable, roomOptions, roomRefs, saveTimetable, SaveTimetableSchema } from '../domain/timetables';
 
 export const PasswordChangeSchema = z.object({
@@ -46,6 +46,32 @@ export function teacherRouter(ctx: AppContext): Router {
     ah(async (req, res) => {
       const t = await teacherId(req.auth!.user.id);
       await checkOut(ctx, t.id, 'MANUAL');
+      res.json(await ctx.live.teacherState(t.id));
+    }),
+  );
+
+  // «Отошёл» на время: на территории школы или за её пределами
+  r.post(
+    '/away',
+    ah(async (req, res) => {
+      const t = await teacherId(req.auth!.user.id);
+      const body = parse(
+        z.object({
+          minutes: z.number().int().min(AWAY_MIN_MINUTES, 'Минимум 5 минут').max(AWAY_MAX_MINUTES, 'Максимум 8 часов'),
+          place: z.enum(['ON_SITE', 'OFF_SITE']),
+        }),
+        req.body,
+      );
+      await setAway(ctx, t.id, body.minutes, body.place);
+      res.json(await ctx.live.teacherState(t.id));
+    }),
+  );
+
+  r.delete(
+    '/away',
+    ah(async (req, res) => {
+      const t = await teacherId(req.auth!.user.id);
+      await clearAway(ctx, t.id);
       res.json(await ctx.live.teacherState(t.id));
     }),
   );

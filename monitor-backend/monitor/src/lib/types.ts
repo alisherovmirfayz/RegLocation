@@ -31,12 +31,16 @@ export interface Building {
   floors: Floor[];
 }
 
-export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM';
+export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
+export type AwayPlace = 'ON_SITE' | 'OFF_SITE';
 
 export interface Location {
   present: boolean;
   roomId: string | null;
   reason: Reason;
+  awayPlace?: AwayPlace;
+  /** ISO-время, до которого учитель отошёл */
+  awayUntil?: string;
   roomLabel?: string;
   className?: string;
   lessonNumber?: number;
@@ -90,4 +94,11 @@ export interface Snapshot {
   monitor: MonitorSettings;
   simulation: { enabled: boolean; assumeAllPresent: boolean } | null;
   day?: { meals: { key: string; title: string; start: string; end: string }[]; endOfDay: string; lessons: { number: number; start: string; end: string }[]; isSchoolDay: boolean };
+}
+
+/** «Отошёл»: куда и до какого времени (время по Ташкенту), одной строкой для перевода */
+export function awayText(loc: { awayPlace?: AwayPlace; awayUntil?: string }): string {
+  if (!loc.awayPlace || !loc.awayUntil) return '';
+  const t = new Date(loc.awayUntil).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+  return loc.awayPlace === 'OFF_SITE' ? `За территорией школы до ${t}` : `На территории школы до ${t}`;
 }

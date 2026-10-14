@@ -633,6 +633,54 @@ describe('Учебный день 08:00–17:00', () => {
   });
 });
 
+describe('«Отошёл» на время', () => {
+  it('на территории / за территорией до указанного времени, «Я вернулся», сброс при выходе', async () => {
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    await t.post('/api/teacher/check-out');
+    h.clock.set('2026-10-19', '10:00');
+
+    // Без отметки «Я в школе» — нельзя
+    let r = await t.post('/api/teacher/away').send({ minutes: 15, place: 'ON_SITE' });
+    expect(r.status).toBe(409);
+    expect(r.body.code).toBe('NOT_PRESENT');
+    await t.post('/api/teacher/check-in');
+    expect((await t.post('/api/teacher/away').send({ minutes: 2, place: 'ON_SITE' })).status).toBe(400);
+
+    r = await t.post('/api/teacher/away').send({ minutes: 15, place: 'ON_SITE' });
+    expect(r.status).toBe(200);
+    expect(r.body.location).toMatchObject({ present: true, reason: 'AWAY', awayPlace: 'ON_SITE', roomId: null });
+    let snap = await h.server.ctx.live.snapshot();
+    const before = snap.presentCount;
+    expect(snap.teachers.find((x) => x.id === teacherId)!.location.reason).toBe('AWAY');
+
+    // За территорией — не считается «в школе»
+    await t.post('/api/teacher/away').send({ minutes: 60, place: 'OFF_SITE' });
+    snap = await h.server.ctx.live.snapshot();
+    expect(snap.teachers.find((x) => x.id === teacherId)!.location.awayPlace).toBe('OFF_SITE');
+    expect(snap.presentCount).toBe(before - 1);
+
+    // Срок истёк — снова по расписанию
+    h.clock.set('2026-10-19', '11:01');
+    expect((await t.get('/api/teacher/state')).body.location.reason).not.toBe('AWAY');
+
+    // «Я вернулся» досрочно
+    await t.post('/api/teacher/away').send({ minutes: 30, place: 'ON_SITE' });
+    r = await t.delete('/api/teacher/away');
+    expect(r.body.location.reason).not.toBe('AWAY');
+
+    // Не дольше конца учебного дня
+    h.clock.set('2026-10-19', '16:50');
+    r = await t.post('/api/teacher/away').send({ minutes: 120, place: 'OFF_SITE' });
+    expect(new Date(r.body.location.awayUntil).getTime() - h.clock.now().getTime()).toBe(10 * 60_000);
+
+    // Выход из школы сбрасывает «Отошёл»
+    await t.post('/api/teacher/check-out');
+    expect(await prisma.attendance.count({ where: { teacherId, checkOutAt: null } })).toBe(0);
+    h.clock.set('2026-10-12', '10:00');
+  });
+});
+
 describe('Обновления опросом (Vercel)', () => {
   const poll = (a: ReturnType<Harness['agent']>, role: string, query = '') => a.get(`/api/realtime/poll?role=${role}${query}`);
 
