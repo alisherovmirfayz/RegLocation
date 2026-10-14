@@ -111,7 +111,8 @@ function Furniture({ room }: { room: Room }) {
   const pad = 14;
   const top = y + 34; // место для подписи
   const ix = x + pad, iw = w - pad * 2, iy = top, ih = y + h - pad - top;
-  if (iw < 30 || ih < 20) return null;
+  // Лестница и лифт рисуются на всю площадь (подпись поверх), остальное — ниже подписи
+  if ((iw < 30 || ih < 20) && room.type !== 'STAIRS' && room.type !== 'ELEVATOR') return null;
   const els: ReactNode[] = [];
 
   switch (room.type) {
@@ -327,9 +328,9 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
         .map((r) => (
           <rect key={`w${r.id}`} x={r.x} y={r.y} width={r.width} height={r.height} fill="none" className={WALL} strokeWidth={3} />
         ))}
-      {/* Двери в коридор */}
+      {/* Двери в коридор (у лестниц и лифта дверей нет) */}
       {ordered
-        .filter((r) => r.type !== 'CORRIDOR' && r.type !== 'ELEVATOR')
+        .filter((r) => r.type !== 'CORRIDOR' && r.type !== 'ELEVATOR' && r.type !== 'STAIRS')
         .map((r) => {
           const info = doorSide(r, corridors);
           return info ? <Door key={`d${r.id}`} room={r} info={info} /> : null;
