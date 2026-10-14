@@ -117,93 +117,88 @@ export function hiddenStairLabels(rooms: Room[]): Set<string> {
 
 type Pt = { x: number; y: number };
 
-/** Осевая линия лестницы: прямые участки по центру пролётов, повороты скруглены. */
-function stairPath(chain: Room[]): { pts: Pt[]; tangents: Pt[] } {
-  const cx = (r: Room) => r.x + r.width / 2, cy = (r: Room) => r.y + r.height / 2;
+type Box = { x1: number; y1: number; x2: number; y2: number };
+
+/**
+ * Составная лестница (например, U-образная вокруг лифта): прямые марши со ступенями поперёк хода,
+ * а на поворотах — плавный веер забежных ступеней из внутреннего угла.
+ */
+function StairChain({ chain }: { chain: Room[] }) {
+  const STEP = 13;
   const edges = chain.slice(0, -1).map((r, i) => sharedEdge(r, chain[i + 1]!)!);
   const axis = chain.map((r, i): 'h' | 'v' => {
     if (i > 0 && i < chain.length - 1) return edges[i - 1]!.side === 'left' || edges[i - 1]!.side === 'right' ? 'h' : 'v';
     return r.height >= r.width ? 'v' : 'h';
   });
-  // Дальний от стыка конец крайнего пролёта
-  const farEnd = (r: Room, a: 'h' | 'v', e: DoorInfo, sideOfR: Side): Pt => {
-    const m = 6;
-    if (a === 'v') {
-      const lo = r.y + m, hi = r.y + r.height - m;
-      const toward = sideOfR === 'top' ? r.y : sideOfR === 'bottom' ? r.y + r.height : (e.from + e.to) / 2;
-      return { x: cx(r), y: Math.abs(lo - toward) > Math.abs(hi - toward) ? lo : hi };
-    }
-    const lo = r.x + m, hi = r.x + r.width - m;
-    const toward = sideOfR === 'left' ? r.x : sideOfR === 'right' ? r.x + r.width : (e.from + e.to) / 2;
-    return { x: Math.abs(lo - toward) > Math.abs(hi - toward) ? lo : hi, y: cy(r) };
-  };
-  const opposite: Record<Side, Side> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
-  const corners: Pt[] = [farEnd(chain[0]!, axis[0]!, edges[0]!, edges[0]!.side)];
-  for (let i = 0; i < edges.length; i++) {
-    const a = chain[i]!, b = chain[i + 1]!, e = edges[i]!;
-    if (axis[i]! !== axis[i + 1]!) {
-      const v = axis[i]! === 'v' ? a : b, h = axis[i]! === 'h' ? a : b;
-      corners.push({ x: cx(v), y: cy(h) });
-    } else if (axis[i]! === 'v') {
-      const y = e.side === 'bottom' ? a.y + a.height : a.y;
-      corners.push({ x: cx(a), y }, { x: cx(b), y });
+  // Повороты: участок пролёта, где марш меняет направление, и внутренний угол веера
+  const turns: { room: number; q: Box; pivot: Pt }[] = [];
+  edges.forEach((e, i) => {
+    if (axis[i] === axis[i + 1]) return;
+    // Поворот лежит в том пролёте, к боковой стене которого примыкает соседний
+    const sideAxis = e.side === 'left' || e.side === 'right' ? 'v' : 'h';
+    const host = axis[i] === sideAxis ? i : i + 1;
+    const r = chain[host]!;
+    const other = chain[host === i ? i + 1 : i]!;
+    if (sideAxis === 'v') {
+      const q = { x1: r.x, x2: r.x + r.width, y1: Math.max(r.y, other.y), y2: Math.min(r.y + r.height, other.y + other.height) };
+      const px = other.x >= r.x + r.width - 3 ? r.x + r.width : r.x;
+      const py = near(q.y1, r.y, 3) ? q.y2 : q.y1;
+      turns.push({ room: host, q, pivot: { x: px, y: py } });
     } else {
-      const x = e.side === 'right' ? a.x + a.width : a.x;
-      corners.push({ x, y: cy(a) }, { x, y: cy(b) });
+      const q = { y1: r.y, y2: r.y + r.height, x1: Math.max(r.x, other.x), x2: Math.min(r.x + r.width, other.x + other.width) };
+      const py = other.y >= r.y + r.height - 3 ? r.y + r.height : r.y;
+      const px = near(q.x1, r.x, 3) ? q.x2 : q.x1;
+      turns.push({ room: host, q, pivot: { x: px, y: py } });
     }
-  }
-  const last = chain[chain.length - 1]!;
-  corners.push(farEnd(last, axis[axis.length - 1]!, edges[edges.length - 1]!, opposite[edges[edges.length - 1]!.side]));
+  });
 
-  // Скругление углов и выборка точек через 1 единицу
-  const width = Math.min(...chain.map((r) => Math.min(r.width, r.height)));
-  const pts: Pt[] = [], tangents: Pt[] = [];
-  const dist = (p: Pt, q: Pt) => Math.hypot(q.x - p.x, q.y - p.y);
-  const unit = (p: Pt, q: Pt) => { const d = dist(p, q) || 1; return { x: (q.x - p.x) / d, y: (q.y - p.y) / d }; };
-  const line = (p: Pt, q: Pt) => {
-    const d = dist(p, q), t = unit(p, q);
-    for (let s = 0; s < d; s += 1) { pts.push({ x: p.x + t.x * s, y: p.y + t.y * s }); tangents.push(t); }
-  };
-  let cur = corners[0]!;
-  for (let i = 1; i < corners.length - 1; i++) {
-    const p = corners[i]!, d1 = unit(cur, p), d2 = unit(p, corners[i + 1]!);
-    const cross = d1.x * d2.y - d1.y * d2.x;
-    if (Math.abs(cross) < 0.01) continue; // прямо — без скругления
-    const r = Math.min(width / 2, dist(cur, p) / (i === 1 ? 1 : 2), dist(p, corners[i + 1]!) / (i === corners.length - 2 ? 1 : 2));
-    const a = { x: p.x - d1.x * r, y: p.y - d1.y * r }, b = { x: p.x + d2.x * r, y: p.y + d2.y * r };
-    line(cur, a);
-    // Дуга четверти окружности от a до b (центр — внутри поворота)
-    const c = { x: a.x + d2.x * r, y: a.y + d2.y * r };
-    const a0 = Math.atan2(a.y - c.y, a.x - c.x);
-    const steps = Math.max(4, Math.ceil((Math.PI / 2) * r));
-    for (let k = 0; k < steps; k++) {
-      const ang = a0 + Math.sign(cross) * (k / steps) * (Math.PI / 2);
-      pts.push({ x: c.x + Math.cos(ang) * r, y: c.y + Math.sin(ang) * r });
-      tangents.push({ x: -Math.sin(ang) * Math.sign(cross), y: Math.cos(ang) * Math.sign(cross) });
-    }
-    cur = b;
-  }
-  line(cur, corners[corners.length - 1]!);
-  return { pts, tangents };
-}
-
-/** U-образная (или любая составная) лестница: ступени по ходу марша, на поворотах — веером. */
-function StairChain({ chain }: { chain: Room[] }) {
-  const { pts, tangents } = stairPath(chain);
-  const inside = (p: Pt) => chain.some((r) => p.x > r.x + 0.5 && p.x < r.x + r.width - 0.5 && p.y > r.y + 0.5 && p.y < r.y + r.height - 0.5);
-  const maxHalf = Math.max(...chain.map((r) => Math.min(r.width, r.height))) / 2 + 2;
-  const reach = (p: Pt, n: Pt, limit: number) => {
-    let s = 0;
-    while (s < limit && inside({ x: p.x + n.x * (s + 1), y: p.y + n.y * (s + 1) })) s += 1;
-    return s;
-  };
   const els: ReactNode[] = [];
-  for (let i = 8; i < pts.length - 4; i += 13) {
-    const p = pts[i]!, t = tangents[i]!;
-    const n = { x: -t.y, y: t.x };
-    const l1 = reach(p, n, maxHalf), l2 = reach(p, { x: -n.x, y: -n.y }, maxHalf);
-    els.push(<line key={i} x1={p.x + n.x * Math.max(0, l1 - 3)} y1={p.y + n.y * Math.max(0, l1 - 3)} x2={p.x - n.x * Math.max(0, l2 - 3)} y2={p.y - n.y * Math.max(0, l2 - 3)} className={LINE} strokeWidth={1.2} />);
-  }
+  chain.forEach((r, i) => {
+    const vertical = axis[i] === 'v';
+    const lo = vertical ? r.y : r.x, hi = vertical ? r.y + r.height : r.x + r.width;
+    // Прямые участки марша = пролёт без зон поворота
+    let free: [number, number][] = [[lo, hi]];
+    for (const t of turns.filter((t) => t.room === i)) {
+      const a = vertical ? t.q.y1 : t.q.x1, b = vertical ? t.q.y2 : t.q.x2;
+      free = free.flatMap(([f, to]): [number, number][] => {
+        const parts: [number, number][] = [[f, Math.min(to, a)], [Math.max(f, b), to]];
+        return parts.filter(([u, v]) => v - u > 2);
+      });
+    }
+    for (const [f, to] of free) {
+      const n = Math.max(1, Math.round((to - f) / STEP));
+      for (let k = 0; k <= n; k++) {
+        const s = f + ((to - f) * k) / n;
+        if (s <= lo + 2 || s >= hi - 2) continue; // по стенам ступени не рисуются
+        els.push(
+          vertical ? (
+            <line key={`s${i}-${s}`} x1={r.x + 3} y1={s} x2={r.x + r.width - 3} y2={s} className={LINE} strokeWidth={1.2} />
+          ) : (
+            <line key={`s${i}-${s}`} x1={s} y1={r.y + 3} x2={s} y2={r.y + r.height - 3} className={LINE} strokeWidth={1.2} />
+          ),
+        );
+      }
+    }
+  });
+  // Веер забежных ступеней
+  turns.forEach(({ q, pivot }, ti) => {
+    const fx = near(pivot.x, q.x1, 1) ? q.x2 : q.x1, fy = near(pivot.y, q.y1, 1) ? q.y2 : q.y1;
+    const a0 = Math.atan2(0, fx - pivot.x), a1 = Math.atan2(fy - pivot.y, 0);
+    let da = a1 - a0;
+    if (da > Math.PI) da -= 2 * Math.PI;
+    if (da < -Math.PI) da += 2 * Math.PI;
+    const qw = q.x2 - q.x1, qh = q.y2 - q.y1;
+    const n = Math.max(3, Math.round(((Math.PI / 2) * Math.max(qw, qh)) / (STEP * 2.2)));
+    for (let k = 1; k < n; k++) {
+      const ang = a0 + (da * k) / n;
+      const c = Math.cos(ang), s = Math.sin(ang);
+      const t = Math.min(Math.abs(c) > 1e-6 ? qw / Math.abs(c) : Infinity, Math.abs(s) > 1e-6 ? qh / Math.abs(s) : Infinity) - 2;
+      els.push(<line key={`w${ti}-${k}`} x1={pivot.x} y1={pivot.y} x2={pivot.x + c * t} y2={pivot.y + s * t} className={LINE} strokeWidth={1.2} />);
+    }
+    // Границы поворота с прямыми маршами — тоже ступени
+    els.push(<line key={`wa${ti}`} x1={pivot.x} y1={pivot.y} x2={fx} y2={pivot.y} className={LINE} strokeWidth={1.2} />);
+    els.push(<line key={`wb${ti}`} x1={pivot.x} y1={pivot.y} x2={pivot.x} y2={fy} className={LINE} strokeWidth={1.2} />);
+  });
   // Стены только снаружи лестницы: общие участки между пролётами не рисуются
   const walls: ReactNode[] = [];
   for (const r of chain) {
@@ -251,7 +246,18 @@ function boardSide(room: Room, door: DoorInfo | null, rooms: Room[]): Side {
   return perp.find(neighbour) ?? (door ? perp[0]! : 'top');
 }
 
-function Door({ room, info }: { room: Room; info: DoorInfo }) {
+const isEntrance = (r: Room) => /вход|выход|kirish|chiqish|entrance|exit/i.test(r.name);
+
+/** Наружная стена помещения (для входной двери здания) */
+function outerSide(room: Room, b: { x1: number; y1: number; x2: number; y2: number }): DoorInfo | null {
+  if (near(room.x + room.width, b.x2)) return { side: 'right', from: room.y, to: room.y + room.height };
+  if (near(room.y + room.height, b.y2)) return { side: 'bottom', from: room.x, to: room.x + room.width };
+  if (near(room.x, b.x1)) return { side: 'left', from: room.y, to: room.y + room.height };
+  if (near(room.y, b.y1)) return { side: 'top', from: room.x, to: room.x + room.width };
+  return null;
+}
+
+function Door({ room, info, gap = 6 }: { room: Room; info: DoorInfo; gap?: number }) {
   const { len, along } = doorGeom(info);
   const cls = 'stroke-brand-400/80 dark:stroke-brand-300/70';
   if (info.side === 'bottom' || info.side === 'top') {
@@ -259,7 +265,7 @@ function Door({ room, info }: { room: Room; info: DoorInfo }) {
     const dir = info.side === 'bottom' ? -1 : 1;
     return (
       <g>
-        <line x1={along} y1={y} x2={along + len} y2={y} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={6} />
+        <line x1={along} y1={y} x2={along + len} y2={y} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={gap} />
         <line x1={along} y1={y} x2={along} y2={y + dir * len} className={cls} strokeWidth={2} />
         <path d={`M ${along} ${y + dir * len} A ${len} ${len} 0 0 ${dir > 0 ? 0 : 1} ${along + len} ${y}`} className={cls} fill="none" strokeWidth={1.2} strokeDasharray="3 3" />
       </g>
@@ -269,7 +275,7 @@ function Door({ room, info }: { room: Room; info: DoorInfo }) {
   const dir = info.side === 'right' ? -1 : 1;
   return (
     <g>
-      <line x1={x} y1={along} x2={x} y2={along + len} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={6} />
+      <line x1={x} y1={along} x2={x} y2={along + len} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={gap} />
       <line x1={x} y1={along} x2={x + dir * len} y2={along} className={cls} strokeWidth={2} />
       <path d={`M ${x + dir * len} ${along} A ${len} ${len} 0 0 ${dir > 0 ? 1 : 0} ${x} ${along + len}`} className={cls} fill="none" strokeWidth={1.2} strokeDasharray="3 3" />
     </g>
@@ -560,6 +566,11 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
       })}
       {/* Наружные стены и окна */}
       <rect x={bounds.x1} y={bounds.y1} width={bounds.x2 - bounds.x1} height={bounds.y2 - bounds.y1} fill="none" className={OUTER} strokeWidth={7} rx={2} />
+      {/* Входная дверь здания */}
+      {rooms.filter(isEntrance).map((r) => {
+        const info = outerSide(r, bounds);
+        return info ? <Door key={`in${r.id}`} room={r} info={info} gap={10} /> : null;
+      })}
       {ordered
         .filter((r) => r.type !== 'STAIRS' && r.type !== 'ELEVATOR' && r.type !== 'CORRIDOR')
         .map((r) => (

@@ -246,7 +246,18 @@ function boardSide(room: Room, door: DoorInfo | null, rooms: Room[]): Side {
   return perp.find(neighbour) ?? (door ? perp[0]! : 'top');
 }
 
-function Door({ room, info }: { room: Room; info: DoorInfo }) {
+const isEntrance = (r: Room) => /вход|выход|kirish|chiqish|entrance|exit/i.test(r.name);
+
+/** Наружная стена помещения (для входной двери здания) */
+function outerSide(room: Room, b: { x1: number; y1: number; x2: number; y2: number }): DoorInfo | null {
+  if (near(room.x + room.width, b.x2)) return { side: 'right', from: room.y, to: room.y + room.height };
+  if (near(room.y + room.height, b.y2)) return { side: 'bottom', from: room.x, to: room.x + room.width };
+  if (near(room.x, b.x1)) return { side: 'left', from: room.y, to: room.y + room.height };
+  if (near(room.y, b.y1)) return { side: 'top', from: room.x, to: room.x + room.width };
+  return null;
+}
+
+function Door({ room, info, gap = 6 }: { room: Room; info: DoorInfo; gap?: number }) {
   const { len, along } = doorGeom(info);
   const cls = 'stroke-brand-400/80 dark:stroke-brand-300/70';
   if (info.side === 'bottom' || info.side === 'top') {
@@ -254,7 +265,7 @@ function Door({ room, info }: { room: Room; info: DoorInfo }) {
     const dir = info.side === 'bottom' ? -1 : 1;
     return (
       <g>
-        <line x1={along} y1={y} x2={along + len} y2={y} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={6} />
+        <line x1={along} y1={y} x2={along + len} y2={y} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={gap} />
         <line x1={along} y1={y} x2={along} y2={y + dir * len} className={cls} strokeWidth={2} />
         <path d={`M ${along} ${y + dir * len} A ${len} ${len} 0 0 ${dir > 0 ? 0 : 1} ${along + len} ${y}`} className={cls} fill="none" strokeWidth={1.2} strokeDasharray="3 3" />
       </g>
@@ -264,7 +275,7 @@ function Door({ room, info }: { room: Room; info: DoorInfo }) {
   const dir = info.side === 'right' ? -1 : 1;
   return (
     <g>
-      <line x1={x} y1={along} x2={x} y2={along + len} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={6} />
+      <line x1={x} y1={along} x2={x} y2={along + len} className="stroke-slate-100 dark:stroke-[#141c2e]" strokeWidth={gap} />
       <line x1={x} y1={along} x2={x + dir * len} y2={along} className={cls} strokeWidth={2} />
       <path d={`M ${x + dir * len} ${along} A ${len} ${len} 0 0 ${dir > 0 ? 1 : 0} ${x} ${along + len}`} className={cls} fill="none" strokeWidth={1.2} strokeDasharray="3 3" />
     </g>
@@ -555,6 +566,11 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
       })}
       {/* Наружные стены и окна */}
       <rect x={bounds.x1} y={bounds.y1} width={bounds.x2 - bounds.x1} height={bounds.y2 - bounds.y1} fill="none" className={OUTER} strokeWidth={7} rx={2} />
+      {/* Входная дверь здания */}
+      {rooms.filter(isEntrance).map((r) => {
+        const info = outerSide(r, bounds);
+        return info ? <Door key={`in${r.id}`} room={r} info={info} gap={10} /> : null;
+      })}
       {ordered
         .filter((r) => r.type !== 'STAIRS' && r.type !== 'ELEVATOR' && r.type !== 'CORRIDOR')
         .map((r) => (
