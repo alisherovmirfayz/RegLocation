@@ -183,9 +183,6 @@ export function SettingsPage() {
             <div className="flex items-center gap-2 font-semibold">
               <KeyRound className="h-5 w-5 text-brand-500" /> Мой аккаунт
             </div>
-            <div className="text-sm text-slate-500">
-              {data.me.lastName} {data.me.firstName} · логин <b>{data.me.login}</b> · {data.me.email} {data.me.isOwner && <Badge color="blue">владелец</Badge>}
-            </div>
             <Field label="Текущий пароль">
               <input className="input" type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} required />
             </Field>
