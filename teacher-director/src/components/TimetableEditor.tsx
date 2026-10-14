@@ -376,7 +376,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
 
       <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-900/90">
         <div className="mr-auto flex items-center gap-2 text-sm">
-          <Badge color="blue">Уроков: {filled.length}</Badge>
+          <Badge color="blue">{`Уроков: ${filled.length}`}</Badge>
           {reviewCount > 0 ? (
             <Badge color="amber">
               <AlertTriangle className="h-3 w-3" /> Проверить: {reviewCount}
