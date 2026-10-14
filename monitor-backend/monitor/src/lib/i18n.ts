@@ -124,6 +124,7 @@ const UZ: Record<string, string> = {
   'Информатика': 'Informatika',
   'Физика': 'Fizika',
   'Химия': 'Kimyo',
+  'Арабский язык': 'Arab tili',
   'Биология': 'Biologiya',
   'География': 'Geografiya',
   'История': 'Tarix',
@@ -619,6 +620,11 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Удалить всё равно\? Уроки останутся в расписании без привязки к кабинету\.$/, () => 'Baribir o‘chirilsinmi? Darslar jadvalda xonaga bog‘lanmagan holda qoladi.'],
   [/^Кабинет прочитан неуверенно(?: \(«(.+)»\))? — подставлен (\S+), как в большинстве уроков\. Проверьте$/, (m) => `Xona ishonchsiz o‘qildi${m[1] ? ` («${m[1]}»)` : ''} — ko‘pchilik darslardagidek ${m[2]}-xona qo‘yildi. Tekshiring`],
   [/^Код: (\S+)$/, (m) => `Kod: ${m[1]}`],
+  [/^● В школе с (\d\d:\d\d)$/, (m) => `● Maktabda, soat ${m[1]} dan`],
+  [/^далее (\d+) урок в (\d\d:\d\d)$/, (m) => `keyingi: ${m[1]}-dars, soat ${m[2]}`],
+  [/^Добавить помещение на «(.+)»$/, (m) => `«${lookup(m[1]!) ?? m[1]}» ga xona qo‘shish`],
+  [/^Размер этажа: (\d+) × (\d+)$/, (m) => `Qavat o‘lchami: ${m[1]} × ${m[2]}`],
+  [/^помещений: (\d+)$/, (m) => `xonalar: ${m[1]}`],
   // «Отошёл → в кабинет»: «Кабинет 205 до 14:30»; общий случай — последним
   [/^Кабинет (\S+) до (\d\d:\d\d)$/, (m) => `${m[1]}-xona, ${m[2]} gacha`],
   [/^(.+) до (\d\d:\d\d)$/, (m) => `${m[1]}, ${m[2]} gacha`],
@@ -653,6 +659,11 @@ export function lookup(text: string): string | null {
   if (t.includes(' · ')) {
     const parts = t.split(' · ').map((p) => lookup(p) ?? (CYR.test(p) ? null : p));
     if (parts.every((p) => p !== null)) return parts.join(' · ');
+  }
+  // Перечни через запятую («Химия, Биология») — по частям
+  if (t.includes(', ')) {
+    const parts = t.split(', ').map((p) => lookup(p) ?? (CYR.test(p) ? null : p));
+    if (parts.every((p) => p !== null)) return parts.join(', ');
   }
   const words = t.replace(WORD_RE, (w) => WORDS[w] ?? w);
   return words !== t ? words : null;

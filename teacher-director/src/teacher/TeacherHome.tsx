@@ -104,7 +104,7 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
           <div className="mt-2">
             <AnimatePresence mode="wait">
               <motion.span key={String(state.present)} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="inline-block">
-                {state.present ? <Badge color="green">● В школе с {fmtTime(state.attendance?.checkInAt)}</Badge> : <Badge>Не в школе</Badge>}
+                {state.present ? <Badge color="green">{`● В школе с ${fmtTime(state.attendance?.checkInAt)}`}</Badge> : <Badge>Не в школе</Badge>}
               </motion.span>
             </AnimatePresence>
           </div>

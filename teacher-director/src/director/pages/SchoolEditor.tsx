@@ -277,7 +277,7 @@ export function SchoolEditorPage() {
             })}
           </div>
           <div className="mt-2 text-xs text-slate-400">
-            Размер этажа: {floorSize.width} × {floorSize.height} · помещений: {rooms.length}
+            {`Размер этажа: ${floorSize.width} × ${floorSize.height} · помещений: ${rooms.length}`}
           </div>
         </div>
 
@@ -322,7 +322,7 @@ export function SchoolEditorPage() {
           )}
 
           <div className="card space-y-3 p-5">
-            <div className="font-semibold">Добавить помещение на «{floor?.name}»</div>
+            <div className="font-semibold">{`Добавить помещение на «${floor?.name ?? ""}»`}</div>
             <div className="grid grid-cols-[5.5rem_1fr] gap-2">
               <Field label="Номер / код">
                 <input className="input" value={newRoom.code} onChange={(e) => setNewRoom({ ...newRoom, code: e.target.value })} placeholder="406" />
