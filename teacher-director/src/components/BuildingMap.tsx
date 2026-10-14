@@ -166,8 +166,8 @@ export function BuildingMap({
           <div className="absolute" style={{ top: top - 8, height: height + 16, left: left + 8, width: w - 16 }}>
             <div className="absolute inset-0 rounded-3xl border border-slate-200/80 bg-white/40 shadow-sm dark:border-white/5 dark:bg-white/[0.025]" />
             <div className="absolute left-4 top-3 flex items-center gap-2">
-              <span className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-sm font-bold text-white shadow ${isCanteen ? 'bg-orange-500' : isStadium ? 'bg-emerald-600' : 'bg-brand-600'}`}>
-                {isCanteen ? <Utensils className="h-4 w-4" /> : isStadium ? <Trophy className="h-4 w-4" /> : floor.level}
+              <span className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-sm font-bold text-white shadow ${isCanteen ? 'bg-orange-500' : isStadium || floor.rooms.some((r) => r.type === 'STADIUM') ? 'bg-emerald-600' : 'bg-brand-600'}`}>
+                {isCanteen ? <Utensils className="h-4 w-4" /> : isStadium || floor.rooms.some((r) => r.type === 'STADIUM') ? <Trophy className="h-4 w-4" /> : floor.level}
               </span>
               <span className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">{floor.name}</span>
             </div>

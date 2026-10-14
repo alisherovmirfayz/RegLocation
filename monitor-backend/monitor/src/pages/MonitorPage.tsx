@@ -199,8 +199,8 @@ export function MonitorPage() {
 
   const building = useMemo(() => snapshot?.buildings.find((b) => b.kind === view), [snapshot, view]);
   const countIn = (kind: string) => snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === kind).length ?? 0;
-  // Вкладки зданий: школа и столовая всегда, стадион — если он есть в схеме
-  const views = VIEWS.filter((v) => v.kind !== 'STADIUM' || snapshot?.buildings.some((b) => b.kind === 'STADIUM'));
+  // Вкладки зданий; стадион — часть школы, отдельная вкладка показывается только для старой схемы
+  const views = VIEWS.filter((v) => snapshot?.buildings.some((b) => b.kind === v.kind));
 
   if (!snapshot) {
     return (

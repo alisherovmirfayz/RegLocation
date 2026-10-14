@@ -495,10 +495,13 @@ describe('Socket.IO', () => {
 });
 
 describe('Стадион', () => {
-  it('есть в схеме; урок с кабинетом «Стадион» — учитель на стадионе; удалённый стадион не возвращается', async () => {
-    const buildings = (await director.get('/api/director/buildings')).body as { id: string; kind: string; floors: { id: string; rooms: { code: string; type: string }[] }[] }[];
-    const stadium = buildings.find((b) => b.kind === 'STADIUM')!;
-    expect(stadium.floors[0]!.rooms.some((r) => r.code === 'STADION' && r.type === 'STADIUM')).toBe(true);
+  type B = { id: string; kind: string; floors: { id: string; name: string; rooms: { code: string; type: string }[] }[] };
+  it('часть школы (этаж после остальных); урок «Стадион» — учитель там; удалённый стадион не возвращается', async () => {
+    const buildings = (await director.get('/api/director/buildings')).body as B[];
+    expect(buildings.some((b) => b.kind === 'STADIUM')).toBe(false);
+    const school = buildings.find((b) => b.kind === 'SCHOOL')!;
+    const floor = school.floors[school.floors.length - 1]!;
+    expect(floor.rooms.some((r) => r.code === 'STADION' && r.type === 'STADIUM')).toBe(true);
 
     h.clock.set('2026-10-19', '10:00'); // понедельник, 2-й урок
     const t = h.agent();
@@ -508,18 +511,34 @@ describe('Стадион', () => {
     expect(saved.status).toBe(200);
     await t.post('/api/teacher/check-in');
     const state = (await t.get('/api/teacher/state')).body;
-    expect(state.location).toMatchObject({ reason: 'LESSON', buildingKind: 'STADIUM', roomName: 'Стадион' });
-
-    // Директор удалил стадион — при следующем запуске сервера он не появляется снова
-    await prisma.building.delete({ where: { id: stadium.id } });
-    const { seedDefaults } = await import('../src/domain/seed');
-    await seedDefaults(prisma);
-    expect(await prisma.building.count({ where: { kind: 'STADIUM' } })).toBe(0);
+    expect(state.location).toMatchObject({ reason: 'LESSON', buildingKind: 'SCHOOL', roomName: 'Стадион' });
     await t.post('/api/teacher/check-out');
-    // Возвращаем прежнее расписание для следующих тестов
     const restore = before.map((e: { dayOfWeek: number; lessonNumber: number; className: string; roomLabel: string }) => ({ dayOfWeek: e.dayOfWeek, lessonNumber: e.lessonNumber, className: e.className, roomLabel: e.roomLabel }));
     expect((await t.put('/api/teacher/timetable', { entries: restore })).status).toBe(200);
     h.clock.set('2026-10-12', '10:00');
+
+    // Директор удалил стадион — при следующем запуске он не появляется снова
+    await prisma.floor.delete({ where: { id: floor.id } });
+    const { seedDefaults } = await import('../src/domain/seed');
+    await seedDefaults(prisma);
+    expect(await prisma.room.count({ where: { type: 'STADIUM' } })).toBe(0);
+  });
+
+  it('стадион отдельным зданием (ранняя версия) переносится в школу со всеми помещениями', async () => {
+    const old = await prisma.building.create({
+      data: {
+        kind: 'STADIUM',
+        name: 'Стадион',
+        floors: { create: { name: 'Стадион', level: 0, sortOrder: 0, rooms: { create: { code: 'STADION', name: 'Мой стадион', type: 'STADIUM' } } } },
+      },
+    });
+    const { seedDefaults } = await import('../src/domain/seed');
+    await seedDefaults(prisma);
+    expect(await prisma.building.count({ where: { id: old.id } })).toBe(0);
+    const room = await prisma.room.findFirst({ where: { code: 'STADION' }, include: { floor: { include: { building: true } } } });
+    expect(room?.name).toBe('Мой стадион');
+    expect(room?.floor.building.kind).toBe('SCHOOL');
+    await prisma.floor.delete({ where: { id: room!.floorId } });
   });
 });
 

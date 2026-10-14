@@ -155,21 +155,47 @@ export async function seedDefaults(prisma: PrismaClient): Promise<void> {
   await ensureStadium(prisma);
 }
 
-/** Стадион добавляется один раз — в том числе в уже работающие школы, созданные раньше. */
+/**
+ * Стадион — часть школы: отдельный «этаж» после остальных этажей.
+ * Добавляется один раз (в том числе в уже работающие школы); если директор удалит его — не возвращается.
+ */
 async function ensureStadium(prisma: PrismaClient): Promise<void> {
+  await moveStadiumIntoSchool(prisma);
   const state = await prisma.systemState.findUnique({ where: { id: 1 }, select: { stadiumSeeded: true } });
   if (state?.stadiumSeeded) return;
-  await prisma.$transaction(
+  const created = await prisma.$transaction(
     async (tx) => {
       // Отметку ставим условно: при одновременном запуске нескольких экземпляров стадион создаст только один
       const claimed = await tx.systemState.updateMany({ where: { id: 1, stadiumSeeded: false }, data: { stadiumSeeded: true } });
-      if (claimed.count === 0) return;
-      if ((await tx.building.count({ where: { kind: 'STADIUM' } })) > 0) return;
-      const stadium = await tx.building.create({ data: { kind: 'STADIUM', name: 'Стадион' } });
-      await createFloor(tx as PrismaClient, stadium.id, DEFAULT_STADIUM, 0);
+      if (claimed.count === 0) return false;
+      const school = await tx.building.findFirst({ where: { kind: 'SCHOOL' } });
+      if (!school) return false;
+      if ((await tx.room.count({ where: { type: 'STADIUM', floor: { buildingId: school.id } } })) > 0) return false;
+      const max = await tx.floor.aggregate({ where: { buildingId: school.id }, _max: { sortOrder: true } });
+      await createFloor(tx as PrismaClient, school.id, DEFAULT_STADIUM, (max._max.sortOrder ?? -1) + 1);
+      return true;
     },
     { timeout: 30_000 },
   );
+  if (!created) return;
   await prisma.systemState.update({ where: { id: 1 }, data: { dataVersion: { increment: 1 } } });
   logger.info('Добавлен стадион');
+}
+
+/** Ранняя версия создавала стадион отдельным зданием — переносим его этажи в школу (с правками директора). */
+async function moveStadiumIntoSchool(prisma: PrismaClient): Promise<void> {
+  const stadium = await prisma.building.findFirst({ where: { kind: 'STADIUM' }, include: { floors: { orderBy: { sortOrder: 'asc' } } } });
+  if (!stadium) return;
+  const school = await prisma.building.findFirst({ where: { kind: 'SCHOOL' } });
+  if (!school) return;
+  await prisma.$transaction(async (tx) => {
+    const max = await tx.floor.aggregate({ where: { buildingId: school.id }, _max: { sortOrder: true } });
+    let order = (max._max.sortOrder ?? -1) + 1;
+    for (const fl of stadium.floors) {
+      await tx.floor.updateMany({ where: { id: fl.id, buildingId: stadium.id }, data: { buildingId: school.id, sortOrder: order++ } });
+    }
+    await tx.building.deleteMany({ where: { id: stadium.id, floors: { none: {} } } });
+  });
+  await prisma.systemState.update({ where: { id: 1 }, data: { dataVersion: { increment: 1 } } });
+  logger.info('Стадион перенесён в схему школы');
 }

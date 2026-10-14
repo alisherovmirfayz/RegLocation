@@ -203,7 +203,7 @@ export function SchoolEditorPage() {
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-white/5">
-          {(['SCHOOL', 'CANTEEN', 'STADIUM'] as const).map((k) => (
+          {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
             <button
               key={k}
               disabled={dirty}
@@ -323,7 +323,7 @@ export function SchoolEditorPage() {
 
           <div className="card space-y-3 p-5">
             <div className="font-semibold">Добавить помещение на «{floor?.name}»</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-[5.5rem_1fr] gap-2">
               <Field label="Номер / код">
                 <input className="input" value={newRoom.code} onChange={(e) => setNewRoom({ ...newRoom, code: e.target.value })} placeholder="406" />
               </Field>

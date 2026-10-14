@@ -132,7 +132,7 @@ export function SettingsPage() {
             </div>
             <div className="flex flex-wrap items-center gap-6">
               <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <Logo size={56} version={logoVersion} />
+                <Logo size={56} version={logoVersion} tone="light" />
               </div>
               <div className="rounded-2xl bg-slate-900 p-3">
                 <div className="dark">

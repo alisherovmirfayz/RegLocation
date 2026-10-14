@@ -99,7 +99,14 @@ function TopBar({ state, connection }: { state: TeacherState | null; connection:
             <ChevronLeft className="h-5 w-5" /> Назад
           </button>
         ) : (
-          <Logo size={34} />
+          <>
+            <span className="min-[440px]:hidden">
+              <Logo size={34} withText={false} />
+            </span>
+            <span className="hidden min-[440px]:block">
+              <Logo size={34} />
+            </span>
+          </>
         )}
         <span
           className={`pulse-dot relative ml-1 inline-block h-2 w-2 rounded-full ${connection === 'online' ? 'text-emerald-500' : 'text-amber-500'} bg-current`}
@@ -110,7 +117,7 @@ function TopBar({ state, connection }: { state: TeacherState | null; connection:
             onClick={() => navigate('/teacher/schedule')}
             className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition ${pathname === '/teacher/schedule' ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200'}`}
           >
-            <CalendarDays className="h-4 w-4" /> Расписание
+            <CalendarDays className="h-4 w-4" /> <span className="hidden min-[400px]:inline">Расписание</span>
           </button>
           <LangSwitch />
           <ThemeToggle />

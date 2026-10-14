@@ -307,13 +307,13 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
             return (
               <div key={l.number} className={`space-y-2 px-3 py-3 sm:px-4 ${review ? 'bg-amber-50/70 dark:bg-amber-500/5' : ''}`}>
                 <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-16 shrink-0 sm:w-20">
+                <div className="w-12 shrink-0 sm:w-20">
                   <div className="text-sm font-bold">{l.number} урок</div>
                   <div className="text-xs text-slate-500 tabular-nums">
                     {l.start}–{l.end}
                   </div>
                 </div>
-                <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+                <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:gap-2 [&_.input]:px-2.5 sm:[&_.input]:px-3.5">
                   <input
                     value={c?.className ?? ''}
                     onChange={(e) => setCell(day, l.number, { className: normClass(e.target.value) })}
@@ -332,7 +332,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
                     className={`input bg-orange-50/60 font-semibold dark:bg-orange-500/5 ${v?.roomBad ? '!border-rose-400 !ring-rose-500/15' : review && (c?.roomConfidence ?? 1) < 0.8 ? '!border-amber-400 ring-4 !ring-amber-400/20' : ''}`}
                   />
                 </div>
-                <div className="w-9 shrink-0">
+                <div className="w-8 shrink-0 sm:w-9">
                   {(c?.className || c?.roomLabel) && (
                     <button onClick={() => setCell(day, l.number, { className: '', roomLabel: '' })} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-white/10" title="Очистить урок">
                       <Eraser className="h-4 w-4" />

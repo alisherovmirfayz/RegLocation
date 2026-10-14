@@ -58,7 +58,7 @@ export function FloorsRoomsPage() {
       }
     >
       <div className="mb-4 flex rounded-xl bg-slate-100 p-1 dark:bg-white/5" style={{ width: 'fit-content' }}>
-        {(['SCHOOL', 'CANTEEN', 'STADIUM'] as const).map((k) => (
+        {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
           <button key={k} onClick={() => setKind(k)} className={`rounded-lg px-4 py-1.5 text-sm font-medium ${kind === k ? 'bg-white shadow dark:bg-slate-800' : 'text-slate-500'}`}>
             {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Стадион'}
           </button>

@@ -138,7 +138,50 @@ export function TeachersPage() {
           <EmptyState icon={<Users />} title={data.length ? 'Никого не найдено' : 'Учителей пока нет'} text={data.length ? 'Измените поиск или фильтры' : 'Создайте первый аккаунт учителя'} />
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <>
+        {/* Телефон: карточки — все кнопки видны без прокрутки вбок */}
+        <div className="space-y-3 md:hidden">
+          {list.map((t) => (
+            <div key={t.id} className="card p-4">
+              <div className="flex items-center gap-3">
+                <button
+                  className="relative shrink-0"
+                  title="Загрузить фото"
+                  onClick={() => {
+                    setAvatarFor(t.id);
+                    fileRef.current?.click();
+                  }}
+                >
+                  <Avatar name={t} url={t.avatarUrl} size={44} ring={false} className={t.present ? 'ring-2 ring-emerald-400' : ''} />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">
+                    {t.lastName} {t.firstName}
+                  </div>
+                  <div className="truncate text-sm text-slate-500">{t.positionTitle}</div>
+                </div>
+                {t.present ? <Badge color="green">В школе</Badge> : <Badge>Не в школе</Badge>}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="font-mono">{t.login}</span>
+                {t.timetable ? <Badge color="green">{t.timetable.lessons} ур.</Badge> : <Badge color="amber">нет</Badge>}
+                {t.kind !== 'TEACHER' && <Badge color="violet">{KIND_LABEL[t.kind]}</Badge>}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" icon={<Eye className="h-4 w-4" />} onClick={() => setCredsFor(t)}>
+                  Логин и пароль
+                </Button>
+                <Button size="sm" variant="secondary" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing(t)}>
+                  Редактировать
+                </Button>
+                <Button size="sm" variant="secondary" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmDelete(t)}>
+                  Удалить
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="card hidden overflow-hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500 dark:border-white/5">
@@ -201,6 +244,7 @@ export function TeachersPage() {
             </table>
           </div>
         </div>
+        </>
       )}
 
       <Modal open={!!editing} onClose={() => setEditing(null)} title="Редактирование учителя">

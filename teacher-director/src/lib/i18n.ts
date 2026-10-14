@@ -387,8 +387,8 @@ const UZ: Record<string, string> = {
   'Аккаунт:': 'Akkaunt:',
   'Логин и надёжный пароль создаются автоматически.': 'Login va ishonchli parol avtomatik yaratiladi.',
   'Логин формируется из фамилии и имени латиницей (например,': 'Login familiya va ismdan lotin harflarida tuziladi (masalan,',
-  '). Пароль — 14 случайных символов, созданных криптографически стойким генератором. Пароль будет показан только один раз.':
-    '). Parol — kriptografik ishonchli generator yaratgan 14 ta tasodifiy belgi.',
+  '). Пароль — 14 случайных символов, созданных криптографически стойким генератором. Посмотреть его позже можно кнопкой «Логин и пароль».':
+    '). Parol — kriptografik ishonchli generator yaratgan 14 ta tasodifiy belgi. Uni keyinroq «Login va parol» tugmasi orqali ko‘rish mumkin.',
   'Учитель входит на сайт по адресу': 'O‘qituvchi saytga quyidagi manzil orqali kiradi',
   'с телефона, загружает своё расписание и отмечает «Я в школе».': 'telefondan, dars jadvalini yuklaydi va «Men maktabdaman» deb belgilaydi.',
   'Посмотреть логин и пароль позже можно кнопкой «Логин и пароль» в списке учителей.': 'Login va parolni keyinroq o‘qituvchilar ro‘yxatidagi «Login va parol» tugmasi orqali ko‘rish mumkin.',

@@ -34,16 +34,19 @@ body {
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12), 0 4px 14px rgb(15 40 120 / 0.22);
 }
 
-.card {
-  @apply rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-white/[0.07] dark:bg-slate-900;
-}
+/* Базовые компоненты — в слое components: классы-утилиты на элементе (pl-10 под значок, w-auto, py-1.5…) сильнее их */
+@layer components {
+  .card {
+    @apply rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-white/[0.07] dark:bg-slate-900;
+  }
 
-.input {
-  @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60 dark:border-white/10 dark:bg-white/5;
-}
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60 dark:border-white/10 dark:bg-white/5;
+  }
 
-.label {
-  @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
 }
 
 .thin-scroll {
