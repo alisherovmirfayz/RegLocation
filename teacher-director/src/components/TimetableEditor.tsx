@@ -69,7 +69,12 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
     }
     return m;
   }, [data]);
-  const resolveRoom = (s: string) => roomCodes.get(s.trim().toLowerCase()) ?? roomCodes.get(s.trim().toLowerCase().replace(/\s+/g, '')) ?? null;
+  // «303 (A)» — кабинет 303 (буква корпуса/крыла), если отдельного «303A» нет
+  const resolveRoom = (s: string) => {
+    const t = s.trim().toLowerCase();
+    const wing = /^(\d{2,4})\s*[-(]?\s*([a-zа-я])\s*\)?$/.exec(t);
+    return roomCodes.get(t) ?? roomCodes.get(t.replace(/\s+/g, '')) ?? (wing ? roomCodes.get(wing[1]! + wing[2]!) ?? roomCodes.get(wing[1]!) : undefined) ?? null;
+  };
 
   const setCell = (d: number, l: number, patch: Partial<Cell>) =>
     setCells((prev) => {

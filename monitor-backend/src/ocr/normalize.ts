@@ -129,7 +129,27 @@ export function normalizeRoom(raw: string, rooms: RoomRef[], ocrConfidence = 1):
   const direct = rooms.find((r) => squash(r.code) === sq || squash(r.name) === sq);
   if (direct) return { value: direct.code, confidence: ocrConfidence, valid: true, corrected: false, roomId: direct.id };
 
-  // 2) Числовой номер с исправлением похожих символов: «4O4» → «404».
+  // 2) Номер с буквой корпуса/крыла: «303 (A)», «303A», «303-А» → кабинет «303A», если он есть, иначе 303 (на проверку)
+  const wing = /^(\d{2,4})\s*[-(]?\s*([A-Za-zА-Яа-я])\s*\)?$/.exec(trimmed);
+  if (wing) {
+    const num = wing[1]!;
+    const letter = cleanup(wing[2]!);
+    const exact = rooms.find((r) => squash(r.code) === squash(num + letter));
+    if (exact) return { value: exact.code, confidence: ocrConfidence, valid: true, corrected: false, roomId: exact.id };
+    const base = rooms.find((r) => r.code === num);
+    if (base) {
+      return {
+        value: base.code,
+        confidence: Math.min(ocrConfidence, 0.75),
+        valid: true,
+        corrected: true,
+        roomId: base.id,
+        note: `Кабинет «${trimmed}» сопоставлен с кабинетом ${base.code}`,
+      };
+    }
+  }
+
+  // 3) Числовой номер с исправлением похожих символов: «4O4» → «404».
   const s = cleanup(trimmed).replace(/^(KAB(INET)?|KA6|XONA)/, '');
   const digits = s
     .split('')

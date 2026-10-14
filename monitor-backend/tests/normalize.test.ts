@@ -22,6 +22,11 @@ describe('Классы: не путать буквы и цифры', () => {
   it('исправленное значение получает пониженную уверенность (требует проверки)', () => {
     expect(normalizeClass('IOA', 0.95).confidence).toBeLessThan(0.8);
     expect(normalizeClass('10A', 0.95).confidence).toBe(0.95);
+    // Кабинет с буквой корпуса: «303 (A)» → 303 (на проверку), а при наличии «303A» — точно он
+    const rs = [{ id: 'r303', code: '303', name: 'Кабинет 303' }];
+    expect(normalizeRoom('303 (A)', rs)).toMatchObject({ value: '303', roomId: 'r303', valid: true });
+    expect(normalizeRoom('303 (A)', rs, 0.95).confidence).toBeLessThan(0.8);
+    expect(normalizeRoom('303 (A)', [...rs, { id: 'r303a', code: '303A', name: 'Кабинет 303A' }])).toMatchObject({ value: '303A', roomId: 'r303a' });
     // Кириллическая «З» выглядит как «3»: значение исправляется, но остаётся на проверке
     expect(normalizeClass('ЗВ', 0.95)).toMatchObject({ value: '3B', valid: true });
     expect(normalizeClass('зв', 0.95).confidence).toBeLessThan(0.8);
