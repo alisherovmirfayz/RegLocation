@@ -280,30 +280,29 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
       )}
 
       {/* Дни недели */}
-      {/* Все дни в одну строку без прокрутки; сегодняшний отмечен */}
-      <div className="grid gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+      {/* Все дни в одну строку без прокрутки: короткое название и число уроков; сегодняшний подписан сверху */}
+      <div className="grid gap-1.5 pt-2 sm:gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
         {days.map((d) => {
           const isToday = d === todayDow;
+          const active = day === d;
           return (
             <button
               key={d}
               onClick={() => setDay(d)}
               title={DAY_NAMES[d]}
-              className={`relative min-w-0 rounded-xl px-1 py-1.5 text-sm font-semibold transition sm:rounded-2xl sm:py-2.5 ${day === d ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300'} ${isToday && day !== d ? 'ring-2 ring-emerald-400/70' : ''}`}
+              className={`relative flex h-14 min-w-0 flex-col items-center justify-center rounded-2xl text-sm font-bold transition ${active ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'} ${isToday && !active ? 'ring-2 ring-emerald-400/70' : ''}`}
             >
-              {day === d && <motion.span layoutId="day-pill" className="absolute inset-0 rounded-xl bg-brand-600 shadow-lg shadow-brand-600/25 sm:rounded-2xl" />}
-              <span className="relative flex flex-col items-center leading-tight sm:flex-row sm:justify-center sm:gap-1.5">
-                <span className="lg:hidden">{DAY_SHORT[d]}</span>
-                <span className="hidden lg:inline">{DAY_NAMES[d]}</span>
-                <span className={`text-[10px] font-medium sm:rounded-full sm:px-1.5 sm:text-[11px] ${day === d ? 'text-white/80 sm:bg-white/25' : 'text-slate-400 sm:bg-slate-100 dark:sm:bg-white/10'}`}>{countByDay(d)}</span>
-                {reviewByDay(d) > 0 && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400 sm:static" />}
-              </span>
-              {isToday && <span className={`relative block truncate text-[9px] font-bold lowercase sm:text-[10px] ${day === d ? 'text-white/90' : 'text-emerald-500'}`}>Сегодня</span>}
+              {active && <motion.span layoutId="day-pill" className="absolute inset-0 rounded-2xl bg-brand-600 shadow-lg shadow-brand-600/25" />}
+              {isToday && (
+                <span className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-500 px-1.5 text-[9px] font-bold leading-4 text-white lowercase shadow">Сегодня</span>
+              )}
+              <span className="relative leading-tight">{DAY_SHORT[d]}</span>
+              <span className={`relative text-[11px] font-medium leading-tight ${active ? 'text-white/80' : 'text-slate-400'}`}>{countByDay(d)}</span>
+              {reviewByDay(d) > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-amber-400" />}
             </button>
           );
         })}
       </div>
-
       {/* Уроки выбранного дня */}
       <datalist id="rl-rooms">
         {data.rooms.map((r) => (
