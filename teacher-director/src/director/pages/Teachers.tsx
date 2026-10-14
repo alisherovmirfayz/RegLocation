@@ -46,19 +46,20 @@ export function TeacherForm({
           <input className="input" value={v.lastName} onChange={(e) => setV({ ...v, lastName: e.target.value })} required />
         </Field>
       </div>
-      <Field label="Предмет или должность" hint="Например: Математика, Английский язык, Завуч">
+      <Field label="Предмет или должность" hint="Например: Математика, Английский язык, Завуч, Директор">
         <input className="input" list="rl-positions" value={v.positionTitle} onChange={(e) => setV({ ...v, positionTitle: e.target.value })} required />
         <datalist id="rl-positions">
-          {['Математика', 'Английский язык', 'Русский язык', 'Узбекский язык', 'Информатика', 'Физика', 'Химия', 'Биология', 'История', 'География', 'Физкультура', 'Робототехника', 'Завуч'].map((p) => (
+          {['Математика', 'Английский язык', 'Русский язык', 'Узбекский язык', 'Информатика', 'Физика', 'Химия', 'Биология', 'История', 'География', 'Физкультура', 'Робототехника', 'Завуч', 'Директор'].map((p) => (
             <option key={p} value={p} />
           ))}
         </datalist>
       </Field>
-      <Field label="Роль на карте" hint="Завуч — в кабинете завуча (кроме обеда и полдника), учитель — по расписанию">
+      <Field label="Роль на карте" hint="Директор — в кабинете директора, завуч — в кабинете завуча (кроме обеда и полдника), учитель — по расписанию">
         <select className="input" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value as StaffKind | 'AUTO' })}>
           <option value="AUTO">Определить по должности</option>
           <option value="TEACHER">Учитель</option>
           <option value="HEAD_TEACHER">Завуч</option>
+          <option value="DIRECTOR">Директор</option>
         </select>
       </Field>
       <Button type="submit" size="lg" className="w-full" loading={busy}>

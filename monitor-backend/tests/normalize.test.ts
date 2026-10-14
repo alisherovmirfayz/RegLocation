@@ -101,7 +101,8 @@ describe('Генерация логинов и паролей', () => {
 
 describe('Тип сотрудника по должности', () => {
   it('директор / завуч / учитель', () => {
-    expect(detectStaffKind('Директор')).toBe('TEACHER'); // роль «директор» учителям не назначается
+    expect(detectStaffKind('Директор')).toBe('DIRECTOR');
+    expect(detectStaffKind('Direktor')).toBe('DIRECTOR');
     expect(detectStaffKind('Завуч')).toBe('HEAD_TEACHER');
     expect(detectStaffKind('Заместитель директора по УВР')).toBe('HEAD_TEACHER');
     expect(detectStaffKind('Математика')).toBe('TEACHER');
