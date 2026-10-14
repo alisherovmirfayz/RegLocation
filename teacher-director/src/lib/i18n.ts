@@ -243,6 +243,8 @@ const UZ: Record<string, string> = {
   'Лестница': 'Zinapoya',
   'Лифт': 'Lift',
   'Туалет': 'Hojatxona',
+  'Туалет М': 'Hojatxona (o‘g‘il)',
+  'Туалет Ж': 'Hojatxona (qiz)',
   'Подсобка': 'Omborxona',
   'Стадион': 'Stadion',
   'Трибуна': 'Tribuna',

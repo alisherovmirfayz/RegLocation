@@ -37,7 +37,9 @@ type Side = 'top' | 'bottom' | 'left' | 'right';
 
 /** Сторона, которой помещение примыкает к коридору, и участок общей стены. */
 function doorSide(room: Room, corridors: Room[]): DoorInfo | null {
-  for (const c of corridors) {
+  // Туалеты открываются в боковой (меньший) коридор, если он есть
+  const order = isWc(room) ? [...corridors].sort((a, b) => a.width * a.height - b.width * b.height) : corridors;
+  for (const c of order) {
     const ox1 = Math.max(room.x, c.x), ox2 = Math.min(room.x + room.width, c.x + c.width);
     const oy1 = Math.max(room.y, c.y), oy2 = Math.min(room.y + room.height, c.y + c.height);
     if (ox2 - ox1 > 20) {
@@ -488,11 +490,19 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
     }
     case 'OTHER':
       if (isWc(room)) {
-        const cx = x + w / 2, cy = y + h / 2 + 8;
-        els.push(<circle key="h1" cx={cx - 14} cy={cy - 16} r={5} className="fill-sky-400/70" />);
-        els.push(<rect key="b1" x={cx - 20} y={cy - 9} width={12} height={22} rx={4} className="fill-sky-400/70" />);
-        els.push(<circle key="h2" cx={cx + 14} cy={cy - 16} r={5} className="fill-pink-400/70" />);
-        els.push(<path key="b2" d={`M ${cx + 14} ${cy - 9} L ${cx + 22} ${cy + 13} L ${cx + 6} ${cy + 13} Z`} className="fill-pink-400/70" />);
+        // Мужской / женский туалет — одна фигурка, общий — обе
+        const male = /\sМ$|мальч|муж|erkak/i.test(room.name), female = /\sЖ$|девоч|жен|ayol/i.test(room.name);
+        const both = male === female;
+        const cx = x + w / 2, cy = Math.min(y + h / 2 + 8, y + h - 16);
+        const mx = both ? cx - 14 : cx, fx = both ? cx + 14 : cx;
+        if (both || male) {
+          els.push(<circle key="h1" cx={mx} cy={cy - 16} r={5} className="fill-sky-400/70" />);
+          els.push(<rect key="b1" x={mx - 6} y={cy - 9} width={12} height={22} rx={4} className="fill-sky-400/70" />);
+        }
+        if (both || female) {
+          els.push(<circle key="h2" cx={fx} cy={cy - 16} r={5} className="fill-pink-400/70" />);
+          els.push(<path key="b2" d={`M ${fx} ${cy - 9} L ${fx + 8} ${cy + 13} L ${fx - 8} ${cy + 13} Z`} className="fill-pink-400/70" />);
+        }
       } else {
         for (let i = 0; i < 2; i++) els.push(<rect key={`sh${i}`} x={ix} y={iy + i * 20} width={iw} height={10} rx={2} className={FURN} strokeWidth={1} />);
       }
