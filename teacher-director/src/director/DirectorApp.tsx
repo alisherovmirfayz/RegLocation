@@ -11,6 +11,7 @@ import { LangSwitch } from '../components/LangSwitch';
 import { DirectorLogin, DirectorRegister } from './Auth';
 import { TeachersPage } from './pages/Teachers';
 import { AddTeacherPage } from './pages/AddTeacher';
+import { CredentialsPage } from './pages/Credentials';
 import { SchoolEditorPage } from './pages/SchoolEditor';
 import { FloorsRoomsPage } from './pages/FloorsRooms';
 import { MonitorAccessPage } from './pages/MonitorAccess';
@@ -159,6 +160,7 @@ function Protected({ session, onLost }: { session: SessionInfo; onLost: () => vo
             <Route index element={<Navigate to="/director/teachers" replace />} />
             <Route path="teachers" element={<TeachersPage />} />
             <Route path="teachers/new" element={<AddTeacherPage />} />
+            <Route path="credentials" element={<CredentialsPage />} />
             <Route path="editor" element={<SchoolEditorPage />} />
             <Route path="floors" element={<FloorsRoomsPage />} />
             <Route path="access" element={<MonitorAccessPage />} />

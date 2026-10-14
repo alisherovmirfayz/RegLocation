@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Camera, Eye, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
+import { Camera, Eye, KeyRound, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { directorApi } from '../../lib/api';
 import { fmtDateTime, KIND_LABEL, type StaffKind, type TeacherListItem } from '../../lib/types';
 import { Avatar } from '../../components/Avatar';
@@ -107,9 +107,15 @@ export function TeachersPage() {
       title="Учителя"
       subtitle={`Всего: ${data.length} · в школе: ${inSchool}`}
       actions={
-        <Link to="/director/teachers/new">
-          <Button icon={<UserPlus className="h-4 w-4" />}>Добавить учителя</Button>
-        </Link>
+        <>
+          {/* Отдельная вкладка: список для печати или PDF */}
+          <a href="/director/credentials" target="_blank" rel="noopener">
+            <Button variant="secondary" icon={<KeyRound className="h-4 w-4" />}>Все логины и пароли</Button>
+          </a>
+          <Link to="/director/teachers/new">
+            <Button icon={<UserPlus className="h-4 w-4" />}>Добавить учителя</Button>
+          </Link>
+        </>
       }
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">

@@ -207,6 +207,29 @@ export function directorRouter(ctx: AppContext): Router {
     }),
   );
 
+  // Логины и пароли всех учителей одним списком (для печати / PDF); просмотр — в журнале
+  r.get(
+    '/credentials/teachers',
+    ah(async (req, res) => {
+      const teachers = await ctx.prisma.teacher.findMany({
+        where: { user: { status: { not: 'ARCHIVED' } } },
+        include: { user: true, subject: true },
+        orderBy: [{ user: { lastName: 'asc' } }, { user: { firstName: 'asc' } }],
+      });
+      await audit(ctx, req, { action: 'teacher.credentials_viewed_all', summary: `Просмотр логинов и паролей всех учителей (${teachers.length})`, targetType: 'teacher' });
+      res.set('Cache-Control', 'no-store').json(
+        teachers.map((t) => ({
+          id: t.id,
+          name: fullName(t.user),
+          subject: t.subject?.name ?? null,
+          login: t.user.login,
+          password: openPassword(ctx.config, t.user.passwordEnc),
+          blocked: t.user.status === 'BLOCKED',
+        })),
+      );
+    }),
+  );
+
   r.delete(
     '/teachers/:id',
     ah(async (req, res) => {

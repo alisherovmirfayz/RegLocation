@@ -182,6 +182,19 @@ describe('Учителя', () => {
     teacherCreds = reset.body.credentials;
     expect((await h.agent().login('teacher', teacherCreds.login, teacherCreds.password)).status).toBe(200);
   });
+
+  it('логины и пароли всех учителей одним списком (только директор, с записью в журнал)', async () => {
+    const r = await director.get('/api/director/credentials/teachers');
+    expect(r.status).toBe(200);
+    expect(r.headers['cache-control']).toBe('no-store');
+    const me = r.body.find((x: { id: string }) => x.id === teacherId);
+    expect(me).toMatchObject({ login: teacherCreds.login, password: teacherCreds.password });
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    expect((await t.get('/api/director/credentials/teachers')).status).toBe(401);
+    const audit = await prisma.auditLog.findFirst({ where: { action: 'teacher.credentials_viewed_all' } });
+    expect(audit).not.toBeNull();
+  });
 });
 
 describe('Доступ к монитору', () => {

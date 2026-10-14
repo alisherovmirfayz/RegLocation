@@ -153,3 +153,27 @@ select option:checked {
   background-color: #2447e0;
   color: #ffffff;
 }
+
+/* Печать списка логинов и паролей: только таблица, чёрным по белому */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 0 auto 0;
+  }
+  .print-area tr {
+    border-color: #ccc !important;
+  }
+}
