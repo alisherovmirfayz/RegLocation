@@ -669,6 +669,21 @@ describe('«Отошёл» на время', () => {
     r = await t.delete('/api/teacher/away');
     expect(r.body.location.reason).not.toBe('AWAY');
 
+    // В кабинет: на мониторе — в этом кабинете
+    const rooms: { id: string; code: string; type: string }[] = (await t.get('/api/teacher/rooms')).body;
+    expect(rooms.some((x) => x.type === 'CORRIDOR')).toBe(false);
+    const target = rooms.find((x) => x.type === 'CLASSROOM')!;
+    expect((await t.post('/api/teacher/away').send({ minutes: 15, place: 'ROOM' })).body.code).toBe('ROOM_REQUIRED');
+    const corridor = await prisma.room.findFirst({ where: { type: 'CORRIDOR' } });
+    expect((await t.post('/api/teacher/away').send({ minutes: 15, place: 'ROOM', roomId: corridor!.id })).status).toBe(400);
+    r = await t.post('/api/teacher/away').send({ minutes: 15, place: 'ROOM', roomId: target.id });
+    expect(r.body.location).toMatchObject({ reason: 'AWAY', awayPlace: 'ROOM', roomId: target.id });
+    snap = await h.server.ctx.live.snapshot();
+    expect(snap.teachers.find((x) => x.id === teacherId)!.location.roomId).toBe(target.id);
+    expect(snap.presentCount).toBe(before);
+    await t.delete('/api/teacher/away');
+    expect(await prisma.attendance.count({ where: { teacherId, awayRoomId: { not: null } } })).toBe(0);
+
     // Не дольше конца учебного дня
     h.clock.set('2026-10-19', '16:50');
     r = await t.post('/api/teacher/away').send({ minutes: 120, place: 'OFF_SITE' });

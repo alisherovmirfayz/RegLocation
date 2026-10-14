@@ -49,7 +49,7 @@ export interface Building {
 }
 
 export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
-export type AwayPlace = 'ON_SITE' | 'OFF_SITE';
+export type AwayPlace = 'ON_SITE' | 'OFF_SITE' | 'ROOM';
 export type StaffKind = 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER';
 
 export interface Location {
@@ -268,8 +268,9 @@ export const fmtTime = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleTimeString('ru-RU', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }) : '—';
 
 /** «Отошёл»: куда и до какого времени (время по Ташкенту), одной строкой для перевода */
-export function awayText(loc: { awayPlace?: AwayPlace; awayUntil?: string }): string {
+export function awayText(loc: { awayPlace?: AwayPlace; awayUntil?: string; roomName?: string | null }): string {
   if (!loc.awayPlace || !loc.awayUntil) return '';
   const t = new Date(loc.awayUntil).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' });
+  if (loc.awayPlace === 'ROOM') return `${loc.roomName ?? 'Кабинет'} до ${t}`;
   return loc.awayPlace === 'OFF_SITE' ? `За территорией школы до ${t}` : `На территории школы до ${t}`;
 }

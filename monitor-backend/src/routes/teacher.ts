@@ -50,7 +50,7 @@ export function teacherRouter(ctx: AppContext): Router {
     }),
   );
 
-  // «Отошёл» на время: на территории школы или за её пределами
+  // «Отошёл» на время: на территории школы, за её пределами или в кабинет
   r.post(
     '/away',
     ah(async (req, res) => {
@@ -58,11 +58,12 @@ export function teacherRouter(ctx: AppContext): Router {
       const body = parse(
         z.object({
           minutes: z.number().int().min(AWAY_MIN_MINUTES, 'Минимум 5 минут').max(AWAY_MAX_MINUTES, 'Максимум 8 часов'),
-          place: z.enum(['ON_SITE', 'OFF_SITE']),
+          place: z.enum(['ON_SITE', 'OFF_SITE', 'ROOM']),
+          roomId: z.string().max(64).optional().nullable(),
         }),
         req.body,
       );
-      await setAway(ctx, t.id, body.minutes, body.place);
+      await setAway(ctx, t.id, body.minutes, body.place, body.roomId);
       res.json(await ctx.live.teacherState(t.id));
     }),
   );
@@ -108,6 +109,9 @@ export function teacherRouter(ctx: AppContext): Router {
       res.json(await ctx.live.teacherState(t.id));
     }),
   );
+
+  // Кабинеты для «Отошёл → В кабинет»
+  r.get('/rooms', ah(async (_req, res) => void res.json(await roomOptions(ctx))));
 
   r.get(
     '/timetable',

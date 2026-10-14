@@ -63,6 +63,7 @@ enum TimetableStatus {
 enum AwayPlace {
   ON_SITE
   OFF_SITE
+  ROOM
 }
 
 enum CheckOutReason {
@@ -242,6 +243,8 @@ model Attendance {
   awayPlace      AwayPlace?
   awayAt         DateTime?
   awayUntil      DateTime?
+  awayRoomId     String?
+  awayRoom       Room?           @relation(fields: [awayRoomId], references: [id], onDelete: SetNull)
 
   @@index([teacherId, date])
   @@index([date])
@@ -282,6 +285,8 @@ model Room {
   layout      RoomLayout?
   entries     TimetableEntry[]
   assignments ManualAssignment[]
+  /// Учителя, отошедшие в этот кабинет («Отошёл» → «В кабинет»)
+  awayVisits  Attendance[]
   createdAt   DateTime @default(now())
 }
 

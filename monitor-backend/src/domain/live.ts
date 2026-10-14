@@ -96,7 +96,7 @@ interface DynamicData {
   present: Set<string>;
   openAttendance: Map<string, { checkInAt: Date }>;
   assignments: Map<string, { id: string; roomId: string; startsAt: Date; endsAt: Date | null; cancelledAt: Date | null }[]>;
-  away: Map<string, { place: AwayPlace; until: Date }>;
+  away: Map<string, { place: AwayPlace; until: Date; roomId: string | null }>;
 }
 
 export const avatarUrl = (fileId: string | null | undefined) => (fileId ? `/api/files/${fileId}` : null);
@@ -255,7 +255,7 @@ export class LiveService {
     const { prisma } = this.ctx;
     const today = toLocal(realNow).date;
     const [open, assignments] = await Promise.all([
-      prisma.attendance.findMany({ where: { date: today, checkOutAt: null }, select: { teacherId: true, checkInAt: true, awayPlace: true, awayUntil: true } }),
+      prisma.attendance.findMany({ where: { date: today, checkOutAt: null }, select: { teacherId: true, checkInAt: true, awayPlace: true, awayUntil: true, awayRoomId: true } }),
       prisma.manualAssignment.findMany({
         where: { cancelledAt: null, OR: [{ endsAt: null }, { endsAt: { gt: realNow } }] },
         select: { id: true, teacherId: true, roomId: true, startsAt: true, endsAt: true, cancelledAt: true },
@@ -271,7 +271,7 @@ export class LiveService {
       present: new Set(open.map((o) => o.teacherId)),
       openAttendance: new Map(open.map((o) => [o.teacherId, { checkInAt: o.checkInAt }])),
       assignments: map,
-      away: new Map(open.filter((o) => o.awayPlace && o.awayUntil).map((o) => [o.teacherId, { place: o.awayPlace!, until: o.awayUntil! }])),
+      away: new Map(open.filter((o) => o.awayPlace && o.awayUntil).map((o) => [o.teacherId, { place: o.awayPlace!, until: o.awayUntil!, roomId: o.awayRoomId }])),
     };
   }
 

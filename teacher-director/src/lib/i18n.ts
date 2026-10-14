@@ -372,6 +372,9 @@ const UZ: Record<string, string> = {
   'За территорию школы': 'Maktab hududidan tashqariga',
   'Отмечено: вы отошли': 'Belgilandi: siz chiqib turibsiz',
   'Отмечено: вы вернулись': 'Belgilandi: siz qaytdingiz',
+  'В кабинет': 'Xonaga',
+  'Номер кабинета': 'Xona raqami',
+  'Выберите кабинет из списка.': 'Ro‘yxatdan xonani tanlang.',
   'RegLocation — логины и пароли учителей': 'RegLocation — o‘qituvchilarning login va parollari',
   'Все значения прочитаны уверенно, но всё равно сверьте с оригиналом.': 'Barcha qiymatlar ishonchli o‘qildi, baribir asl nusxa bilan solishtiring.',
   '— распознавание неуверенное или кабинет не найден в базе.': '— aniqlash ishonchsiz yoki xona bazada topilmadi.',
@@ -616,6 +619,9 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Удалить всё равно\? Уроки останутся в расписании без привязки к кабинету\.$/, () => 'Baribir o‘chirilsinmi? Darslar jadvalda xonaga bog‘lanmagan holda qoladi.'],
   [/^Кабинет прочитан неуверенно(?: \(«(.+)»\))? — подставлен (\S+), как в большинстве уроков\. Проверьте$/, (m) => `Xona ishonchsiz o‘qildi${m[1] ? ` («${m[1]}»)` : ''} — ko‘pchilik darslardagidek ${m[2]}-xona qo‘yildi. Tekshiring`],
   [/^Код: (\S+)$/, (m) => `Kod: ${m[1]}`],
+  // «Отошёл → в кабинет»: «Кабинет 205 до 14:30»; общий случай — последним
+  [/^Кабинет (\S+) до (\d\d:\d\d)$/, (m) => `${m[1]}-xona, ${m[2]} gacha`],
+  [/^(.+) до (\d\d:\d\d)$/, (m) => `${m[1]}, ${m[2]} gacha`],
 ];
 
 /** Хвост составного сообщения (после пустой строки) — переводится отдельно. */

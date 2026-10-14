@@ -13,7 +13,7 @@ export type LocationReason =
   | 'UNKNOWN_ROOM'
   | 'AWAY';
 
-export type AwayPlace = 'ON_SITE' | 'OFF_SITE';
+export type AwayPlace = 'ON_SITE' | 'OFF_SITE' | 'ROOM';
 
 export interface TimetableSlot {
   dayOfWeek: number;
@@ -49,8 +49,8 @@ export interface LocationInput {
   timetable: TimetableSlot[];
   assignments: ActiveAssignment[];
   rooms: SpecialRooms;
-  /** «Отошёл»: куда и до какого момента (действует, пока не истёк срок) */
-  away?: { place: AwayPlace; until: Date } | null;
+  /** «Отошёл»: куда (на территории, за территорией или в кабинет) и до какого момента */
+  away?: { place: AwayPlace; until: Date; roomId?: string | null } | null;
 }
 
 export interface ComputedLocation {
@@ -112,7 +112,14 @@ export function computeLocation(input: LocationInput): ComputedLocation {
   }
 
   if (input.away && input.away.until > input.now) {
-    return { present: true, roomId: null, reason: 'AWAY', awayPlace: input.away.place, awayUntil: input.away.until.toISOString(), nextLesson: next };
+    return {
+      present: true,
+      roomId: input.away.place === 'ROOM' ? (input.away.roomId ?? null) : null,
+      reason: 'AWAY',
+      awayPlace: input.away.place,
+      awayUntil: input.away.until.toISOString(),
+      nextLesson: next,
+    };
   }
 
   const meal = activeMeal(schedule, dayOfWeek, minutes);

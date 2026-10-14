@@ -9,7 +9,8 @@ import { Alert, Badge, Button, Modal, useToast } from '../components/ui';
 
 /** Варианты «На сколько» для кнопки «Отошёл» (минуты) */
 const AWAY_DURATIONS = [5, 10, 15, 30, 45, 60, 90, 120, 180];
-const durationLabel = (m: number) => (m < 60 ? `${m} мин` : m % 60 ? `${Math.floor(m / 60)},5 ч` : `${m / 60} ч`);
+type AwayRoom = { id: string; code: string; name: string; floor: string };
+const durationLabel =(m: number) => (m < 60 ? `${m} мин` : m % 60 ? `${Math.floor(m / 60)},5 ч` : `${m / 60} ч`);
 
 export function TeacherHome({ state, onState }: { state: TeacherState; onState: (s: TeacherState) => void }) {
   const toast = useToast();
@@ -21,11 +22,35 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
   const [awayOpen, setAwayOpen] = useState(false);
   const [awayPlace, setAwayPlace] = useState<AwayPlace>('ON_SITE');
   const [awayMinutes, setAwayMinutes] = useState(15);
+  const [awayRoom, setAwayRoom] = useState('');
+  const [rooms, setRooms] = useState<AwayRoom[] | null>(null);
+
+  const loadRooms = async () => {
+    if (rooms) return;
+    try {
+      setRooms(await teacherApi.get<AwayRoom[]>('/api/teacher/rooms'));
+    } catch (e) {
+      toast('error', (e as Error).message);
+    }
+  };
+
+  // «205», «каб. 205», «Кабинет 205», «Учительская» → кабинет из списка
+  const resolveRoom = (text: string) => {
+    const q = text.trim().toLowerCase().replace(/^(каб\.?|кабинет|xona)\s*/, '').replace(/\s+/g, '');
+    if (!q || !rooms) return null;
+    return rooms.find((r) => r.code.toLowerCase().replace(/\s+/g, '') === q) ?? rooms.find((r) => r.name.toLowerCase().replace(/\s+/g, '') === q) ?? null;
+  };
 
   const goAway = async () => {
+    let roomId: string | undefined;
+    if (awayPlace === 'ROOM') {
+      const room = resolveRoom(awayRoom);
+      if (!room) return toast('error', 'Выберите кабинет из списка.');
+      roomId = room.id;
+    }
     setBusy(true);
     try {
-      const next = await teacherApi.post<TeacherState>('/api/teacher/away', { minutes: awayMinutes, place: awayPlace });
+      const next = await teacherApi.post<TeacherState>('/api/teacher/away', { minutes: awayMinutes, place: awayPlace, roomId });
       onState(next);
       setAwayOpen(false);
       toast('success', 'Отмечено: вы отошли');
@@ -235,18 +260,22 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
         <div className="space-y-5">
           <div>
             <div className="label">Куда</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {(
                 [
                   ['ON_SITE', 'На территории школы', School],
+                  ['ROOM', 'В кабинет', DoorOpen],
                   ['OFF_SITE', 'За территорию школы', Trees],
                 ] as const
               ).map(([value, label, Icon]) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setAwayPlace(value)}
-                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center text-sm font-semibold transition ${
+                  onClick={() => {
+                    setAwayPlace(value);
+                    if (value === 'ROOM') void loadRooms();
+                  }}
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1.5 py-3 text-center text-[13px] font-semibold leading-tight transition ${
                     awayPlace === value ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200' : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-white/10 dark:text-slate-300'
                   }`}
                 >
@@ -255,6 +284,27 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
                 </button>
               ))}
             </div>
+            {awayPlace === 'ROOM' && (
+              <div className="mt-3">
+                <div className="label">Номер кабинета</div>
+                <input
+                  className="input text-lg font-semibold"
+                  list="rl-away-rooms"
+                  inputMode="text"
+                  placeholder="205"
+                  value={awayRoom}
+                  onChange={(e) => setAwayRoom(e.target.value)}
+                  autoFocus
+                />
+                <datalist id="rl-away-rooms">
+                  {(rooms ?? []).map((r) => (
+                    <option key={r.id} value={r.code}>
+                      {r.name} · {r.floor}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
+            )}
           </div>
           <div>
             <div className="label">На сколько</div>
