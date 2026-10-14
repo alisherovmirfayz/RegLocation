@@ -15,7 +15,7 @@ const LINE = 'stroke-slate-400/70 dark:stroke-slate-500/70';
 const FLOOR_FILL: Partial<Record<Room['type'], string>> = {
   CLASSROOM: 'fill-amber-50 dark:fill-[#1f2a40]',
   LAB: 'fill-cyan-50 dark:fill-[#17303d]',
-  GYM: 'fill-[#2a2a2e] dark:fill-[#141416]',
+  GYM: 'fill-[#e9f6ec] dark:fill-[#163126]',
   CANTEEN: 'fill-orange-50 dark:fill-[#33261c]',
   STADIUM: 'fill-[#14532d] dark:fill-[#0d2e1a]',
   KITCHEN: 'fill-stone-100 dark:fill-[#2a2622]',
@@ -140,26 +140,14 @@ function Furniture({ room }: { room: Room }) {
       break;
     }
     case 'GYM': {
-      // Пол — красные и чёрные маты в шахматном порядке
-      const cell = Math.max(14, Math.min(iw, ih) / 5);
-      const cols = Math.max(1, Math.round(iw / cell));
-      const rows = Math.max(1, Math.round(ih / cell));
-      const cw = iw / cols, chh = ih / rows;
-      for (let r = 0; r < rows; r++)
-        for (let c = 0; c < cols; c++) {
-          els.push(
-            <rect
-              key={`mat${r}-${c}`}
-              x={ix + c * cw}
-              y={iy + r * chh}
-              width={cw}
-              height={chh}
-              className={(r + c) % 2 ? 'fill-[#1c1c1f] dark:fill-[#0b0b0d]' : 'fill-[#c62828] dark:fill-[#8f1d1d]'}
-              stroke="rgb(0 0 0 / 0.35)"
-              strokeWidth={1}
-            />,
-          );
-        }
+      // Разметка площадки
+      const cls = 'stroke-emerald-600/50 dark:stroke-emerald-400/40';
+      els.push(<rect key="court" x={ix} y={iy} width={iw} height={ih} rx={4} fill="none" className={cls} strokeWidth={2} />);
+      els.push(<line key="mid" x1={ix + iw / 2} y1={iy} x2={ix + iw / 2} y2={iy + ih} className={cls} strokeWidth={2} />);
+      els.push(<circle key="cc" cx={ix + iw / 2} cy={iy + ih / 2} r={Math.min(ih, iw) * 0.18} fill="none" className={cls} strokeWidth={2} />);
+      const k = Math.min(ih * 0.5, iw * 0.12);
+      els.push(<path key="k1" d={`M ${ix} ${iy + ih / 2 - k} A ${k} ${k} 0 0 1 ${ix} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
+      els.push(<path key="k2" d={`M ${ix + iw} ${iy + ih / 2 - k} A ${k} ${k} 0 0 0 ${ix + iw} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
       break;
     }
     case 'STADIUM': {

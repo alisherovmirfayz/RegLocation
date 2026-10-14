@@ -53,7 +53,6 @@ function typicalFloor(level: number): FloorSeed {
 /** 1 этаж (чертёж floor-1.png). */
 const F1: Plan = { x0: 337, y0: 140, w: 763, h: 482 };
 /** 0 этаж (чертёж floor-0.png). */
-const F0: Plan = { x0: 268, y0: 157, w: 747, h: 450 };
 
 export const DEFAULT_SCHOOL: FloorSeed[] = [
   typicalFloor(6),
@@ -85,14 +84,18 @@ export const DEFAULT_SCHOOL: FloorSeed[] = [
     name: '0 этаж',
     level: 0,
     rooms: [
-      { code: 'ROBOTICS', name: 'Робототехника', type: 'LAB', ...rect(F0, 268, 157, 580, 367) },
-      { code: 'F0-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', ...rect(F0, 268, 367, 580, 428) },
-      { code: 'F0-STAIRS', name: 'Лестница', type: 'STAIRS', ...rect(F0, 268, 428, 355, 607) },
-      { code: 'F0-LIFT', name: 'Лифт', type: 'ELEVATOR', ...rect(F0, 355, 428, 478, 540) },
-      { code: 'F0-STAIRS2', name: 'Лестница', type: 'STAIRS', ...rect(F0, 478, 428, 580, 607) },
-      { code: 'F0-STAIRS3', name: 'Лестница', type: 'STAIRS', ...rect(F0, 355, 540, 478, 607) },
-      { code: 'SPORT1', name: 'Sport zal 1', type: 'GYM', ...rect(F0, 580, 157, 1015, 370) },
-      { code: 'SPORT2', name: 'Sport zal 2', type: 'GYM', ...rect(F0, 580, 370, 1015, 607) },
+      // По чертежу директора: робототехника, коридор и лестницы с лифтом; два спортзала; две раздевалки и холл со входом
+      { code: '100', name: 'Робототехника', type: 'LAB', x: 20, y: 20, width: 331, height: 186 },
+      { code: 'F0-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 20, y: 206, width: 331, height: 62 },
+      { code: 'F0-STAIRS', name: 'Лестница', type: 'STAIRS', x: 20, y: 268, width: 104, height: 132 },
+      { code: 'F0-LIFT', name: 'Лифт', type: 'ELEVATOR', x: 124, y: 268, width: 128, height: 81 },
+      { code: 'F0-STAIRS3', name: 'Лестница', type: 'STAIRS', x: 124, y: 349, width: 128, height: 51 },
+      { code: 'F0-STAIRS2', name: 'Лестница', type: 'STAIRS', x: 252, y: 268, width: 99, height: 132 },
+      { code: 'SPORT1', name: 'Sport zal 1', type: 'GYM', x: 351, y: 20, width: 392, height: 201 },
+      { code: 'SPORT2', name: 'Sport zal 2', type: 'GYM', x: 351, y: 221, width: 392, height: 179 },
+      { code: 'RAZDEVALKA1', name: 'Раздевалка 1', type: 'OTHER', x: 743, y: 20, width: 119, height: 139 },
+      { code: 'RAZDEVALKA2', name: 'Раздевалка 2', type: 'OTHER', x: 862, y: 20, width: 118, height: 139 },
+      { code: 'F0-HALL', name: 'Вход / выход', type: 'CORRIDOR', x: 743, y: 159, width: 237, height: 241 },
     ],
   },
 ];
@@ -110,9 +113,7 @@ export const DEFAULT_STADIUM: FloorSeed = {
   name: 'Стадион',
   level: 0,
   rooms: [
-    { code: 'STADION', name: 'Стадион', type: 'STADIUM', x: 20, y: 20, width: 760, height: 380 },
-    { code: 'TRIBUNA', name: 'Трибуна', type: 'OTHER', x: 800, y: 20, width: 180, height: 250 },
-    { code: 'RAZDEVALKA', name: 'Раздевалка', type: 'OTHER', x: 800, y: 285, width: 180, height: 115 },
+    { code: 'STADION', name: 'Стадион', type: 'STADIUM', x: 20, y: 20, width: 960, height: 380 },
   ],
 };
 
