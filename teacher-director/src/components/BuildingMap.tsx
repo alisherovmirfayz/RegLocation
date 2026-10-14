@@ -1,4 +1,4 @@
-import { Utensils } from 'lucide-react';
+import { Trophy, Utensils } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Building, Room, SnapshotTeacher as Teacher } from '../lib/types';
@@ -22,6 +22,7 @@ const ROOM_STYLE: Record<string, string> = {
   GYM: 'bg-emerald-50 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-500/50',
   LAB: 'bg-cyan-50 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-500/50',
   CANTEEN: 'bg-orange-50 border-orange-300 dark:bg-orange-900/30 dark:border-orange-500/50',
+  STADIUM: 'bg-emerald-50 border-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-500/50',
   KITCHEN: 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-600/50',
   OTHER: 'bg-white/80 border-slate-300 dark:bg-slate-800/60 dark:border-slate-600/70',
 };
@@ -96,6 +97,7 @@ export function BuildingMap({
 
   const floors = useMemo(() => [...building.floors].sort((a, b) => a.sortOrder - b.sortOrder), [building]);
   const isCanteen = building.kind === 'CANTEEN';
+  const isStadium = building.kind === 'STADIUM';
 
   const geometry = useMemo(() => {
     const cols = Math.max(1, Math.min(columns, floors.length || 1));
@@ -164,8 +166,8 @@ export function BuildingMap({
           <div className="absolute" style={{ top: top - 8, height: height + 16, left: left + 8, width: w - 16 }}>
             <div className="absolute inset-0 rounded-3xl border border-slate-200/80 bg-white/40 shadow-sm dark:border-white/5 dark:bg-white/[0.025]" />
             <div className="absolute left-4 top-3 flex items-center gap-2">
-              <span className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-sm font-bold text-white shadow ${isCanteen ? 'bg-orange-500' : 'bg-brand-600'}`}>
-                {isCanteen ? <Utensils className="h-4 w-4" /> : floor.level}
+              <span className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-sm font-bold text-white shadow ${isCanteen ? 'bg-orange-500' : isStadium ? 'bg-emerald-600' : 'bg-brand-600'}`}>
+                {isCanteen ? <Utensils className="h-4 w-4" /> : isStadium ? <Trophy className="h-4 w-4" /> : floor.level}
               </span>
               <span className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">{floor.name}</span>
             </div>
@@ -201,7 +203,7 @@ export function BuildingMap({
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
-                    className={`rounded-full px-1.5 text-[10px] font-bold text-white ${isCanteen ? 'bg-orange-500' : 'bg-brand-500'}`}
+                    className={`rounded-full px-1.5 text-[10px] font-bold text-white ${isCanteen ? 'bg-orange-500' : isStadium ? 'bg-emerald-600' : 'bg-brand-500'}`}
                   >
                     {occupants}
                   </motion.span>

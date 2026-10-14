@@ -20,7 +20,7 @@ import { PasswordChangeSchema } from './teacher';
 
 const ROOM_TYPES = [
   'CLASSROOM', 'RECEPTION', 'TEACHERS_ROOM', 'DIRECTOR_OFFICE', 'HEAD_TEACHER_OFFICE', 'ACCOUNTING', 'STAIRS', 'ELEVATOR',
-  'CORRIDOR', 'GYM', 'LAB', 'CANTEEN', 'KITCHEN', 'OTHER',
+  'CORRIDOR', 'GYM', 'LAB', 'CANTEEN', 'KITCHEN', 'STADIUM', 'OTHER',
 ] as const;
 
 const fullName = (u: { lastName: string; firstName: string }) => `${u.lastName} ${u.firstName}`.trim();
@@ -501,7 +501,7 @@ export function directorRouter(ctx: AppContext): Router {
     ah(async (req, res) => {
       const body = parse(
         z.object({
-          buildingKind: z.enum(['SCHOOL', 'CANTEEN']).default('SCHOOL'),
+          buildingKind: z.enum(['SCHOOL', 'CANTEEN', 'STADIUM']).default('SCHOOL'),
           name: z.string().trim().min(1, 'Введите название этажа').max(40),
           level: z.number().int().min(-5).max(50),
           position: z.enum(['top', 'bottom']).default('top'),

@@ -17,6 +17,7 @@ const FLOOR_FILL: Partial<Record<Room['type'], string>> = {
   LAB: 'fill-cyan-50 dark:fill-[#17303d]',
   GYM: 'fill-[#e9f6ec] dark:fill-[#163126]',
   CANTEEN: 'fill-orange-50 dark:fill-[#33261c]',
+  STADIUM: 'fill-[#e9f6ec] dark:fill-[#12261c]',
   KITCHEN: 'fill-stone-100 dark:fill-[#2a2622]',
   TEACHERS_ROOM: 'fill-indigo-50 dark:fill-[#222645]',
   DIRECTOR_OFFICE: 'fill-violet-50 dark:fill-[#2a2346]',
@@ -147,6 +148,38 @@ function Furniture({ room }: { room: Room }) {
       const k = Math.min(ih * 0.5, iw * 0.12);
       els.push(<path key="k1" d={`M ${ix} ${iy + ih / 2 - k} A ${k} ${k} 0 0 1 ${ix} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
       els.push(<path key="k2" d={`M ${ix + iw} ${iy + ih / 2 - k} A ${k} ${k} 0 0 0 ${ix + iw} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
+      break;
+    }
+    case 'STADIUM': {
+      // Беговая дорожка (овал) и футбольное поле с разметкой
+      const pad = Math.min(iw, ih) * 0.05;
+      const tx = ix + pad, ty = iy + pad, tw = iw - pad * 2, th = ih - pad * 2;
+      const r = th / 2;
+      els.push(<rect key="track" x={tx} y={ty} width={tw} height={th} rx={r} className="fill-[#d9785a] dark:fill-[#7a3b2a]" />);
+      const lane = th * 0.04;
+      for (let l = 1; l <= 3; l++) {
+        const o = l * lane;
+        els.push(<rect key={`lane${l}`} x={tx + o} y={ty + o} width={tw - 2 * o} height={th - 2 * o} rx={r - o} fill="none" className="stroke-white/60 dark:stroke-white/30" strokeWidth={1} />);
+      }
+      const fo = lane * 4;
+      els.push(<rect key="grass" x={tx + fo} y={ty + fo} width={tw - 2 * fo} height={th - 2 * fo} rx={r - fo} className="fill-[#4caf6a] dark:fill-[#1f5a35]" />);
+      // Поле — прямоугольник внутри овала
+      const fx = tx + r * 0.62, fy = ty + fo + th * 0.06, fw = tw - 2 * r * 0.62, fh = th - 2 * fo - th * 0.12;
+      const stripes = 10;
+      for (let k = 0; k < stripes; k += 2) {
+        els.push(<rect key={`st${k}`} x={fx + (k * fw) / stripes} y={fy} width={fw / stripes} height={fh} className="fill-black/[0.07] dark:fill-black/20" />);
+      }
+      const line = 'stroke-white/90 dark:stroke-white/60';
+      els.push(<rect key="pitch" x={fx} y={fy} width={fw} height={fh} fill="none" className={line} strokeWidth={2} />);
+      els.push(<line key="half" x1={fx + fw / 2} y1={fy} x2={fx + fw / 2} y2={fy + fh} className={line} strokeWidth={2} />);
+      els.push(<circle key="center" cx={fx + fw / 2} cy={fy + fh / 2} r={fh * 0.16} fill="none" className={line} strokeWidth={2} />);
+      els.push(<circle key="spot" cx={fx + fw / 2} cy={fy + fh / 2} r={2.5} className="fill-white/90" />);
+      const bw = fw * 0.13, bh = fh * 0.5;
+      els.push(<rect key="boxL" x={fx} y={fy + (fh - bh) / 2} width={bw} height={bh} fill="none" className={line} strokeWidth={2} />);
+      els.push(<rect key="boxR" x={fx + fw - bw} y={fy + (fh - bh) / 2} width={bw} height={bh} fill="none" className={line} strokeWidth={2} />);
+      const gh = fh * 0.18, gw = Math.max(4, fw * 0.015);
+      els.push(<rect key="goalL" x={fx - gw} y={fy + (fh - gh) / 2} width={gw} height={gh} className="fill-white/80 dark:fill-white/50" />);
+      els.push(<rect key="goalR" x={fx + fw} y={fy + (fh - gh) / 2} width={gw} height={gh} className="fill-white/80 dark:fill-white/50" />);
       break;
     }
     case 'CANTEEN': {

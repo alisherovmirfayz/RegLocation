@@ -16,6 +16,7 @@ const TYPE_COLOR: Partial<Record<RoomType, string>> = {
   ELEVATOR: 'hatch bg-slate-100 border-slate-300 dark:bg-slate-900 dark:border-slate-700',
   GYM: 'bg-emerald-50 border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-600',
   CANTEEN: 'bg-orange-50 border-orange-300 dark:bg-orange-900/30 dark:border-orange-600',
+  STADIUM: 'bg-emerald-50 border-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-600',
   TEACHERS_ROOM: 'bg-indigo-50 border-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-600',
   DIRECTOR_OFFICE: 'bg-violet-50 border-violet-300 dark:bg-violet-900/30 dark:border-violet-600',
   HEAD_TEACHER_OFFICE: 'bg-fuchsia-50 border-fuchsia-300 dark:bg-fuchsia-900/30 dark:border-fuchsia-600',
@@ -27,7 +28,7 @@ type Drag = { id: string; kind: 'move' | 'resize'; startX: number; startY: numbe
 export function SchoolEditorPage() {
   const toast = useToast();
   const { data, reload } = useLoad(() => directorApi.get<Building[]>('/api/director/buildings'));
-  const [buildingKind, setBuildingKind] = useState<'SCHOOL' | 'CANTEEN'>('SCHOOL');
+  const [buildingKind, setBuildingKind] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM'>('SCHOOL');
   const [floorId, setFloorId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [floorSize, setFloorSize] = useState({ width: 1000, height: 420 });
@@ -202,7 +203,7 @@ export function SchoolEditorPage() {
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-white/5">
-          {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
+          {(['SCHOOL', 'CANTEEN', 'STADIUM'] as const).map((k) => (
             <button
               key={k}
               disabled={dirty}
@@ -213,7 +214,7 @@ export function SchoolEditorPage() {
               }}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium ${buildingKind === k ? 'bg-white shadow dark:bg-slate-800' : 'text-slate-500'}`}
             >
-              {k === 'SCHOOL' ? 'Школа' : 'Столовая'}
+              {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Стадион'}
             </button>
           ))}
         </div>

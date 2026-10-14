@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Building2, History, KeyRound, LogOut, Map, Menu, Settings, Users, X } from 'lucide-react';
+import { Building2, KeyRound, LogOut, Map, Menu, Settings, Users, X } from 'lucide-react';
 import { loadSession, logout, onUnauthorized, type SessionInfo } from '../lib/api';
 import { useSocket, type Connection } from '../lib/useSocket';
 import type { AuditRow, Snapshot } from '../lib/types';
@@ -15,7 +15,6 @@ import { AddTeacherPage } from './pages/AddTeacher';
 import { SchoolEditorPage } from './pages/SchoolEditor';
 import { FloorsRoomsPage } from './pages/FloorsRooms';
 import { MonitorAccessPage } from './pages/MonitorAccess';
-import { AuditPage } from './pages/Audit';
 import { SettingsPage } from './pages/Settings';
 
 interface DirectorCtx {
@@ -36,7 +35,6 @@ const NAV = [
   { to: '/director/editor', label: 'Редактор школы', icon: Map },
   { to: '/director/floors', label: 'Этажи и кабинеты', icon: Building2 },
   { to: '/director/access', label: 'Доступ к монитору', icon: KeyRound },
-  { to: '/director/history', label: 'История изменений', icon: History },
   { to: '/director/settings', label: 'Настройки', icon: Settings },
 ];
 
@@ -174,7 +172,6 @@ function Protected({ session, onLost }: { session: SessionInfo; onLost: () => vo
             <Route path="editor" element={<SchoolEditorPage />} />
             <Route path="floors" element={<FloorsRoomsPage />} />
             <Route path="access" element={<MonitorAccessPage />} />
-            <Route path="history" element={<AuditPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/director/teachers" replace />} />
           </Routes>

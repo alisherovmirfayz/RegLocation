@@ -1,7 +1,7 @@
 // Типы данных, приходящих от backend (см. src/domain/live.ts).
 export type RoomType =
   | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING'
-  | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'OTHER';
+  | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'STADIUM' | 'OTHER';
 
 export interface Room {
   id: string;
@@ -26,7 +26,7 @@ export interface Floor {
 
 export interface Building {
   id: string;
-  kind: 'SCHOOL' | 'CANTEEN';
+  kind: 'SCHOOL' | 'CANTEEN' | 'STADIUM';
   name: string;
   floors: Floor[];
 }
@@ -41,7 +41,7 @@ export interface Location {
   className?: string;
   lessonNumber?: number;
   mealKey?: 'lunch' | 'snack';
-  buildingKind: 'SCHOOL' | 'CANTEEN' | null;
+  buildingKind: 'SCHOOL' | 'CANTEEN' | 'STADIUM' | null;
   floorId: string | null;
   roomName: string | null;
 }

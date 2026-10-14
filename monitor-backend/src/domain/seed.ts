@@ -106,6 +106,16 @@ export const DEFAULT_CANTEEN: FloorSeed = {
   ],
 };
 
+export const DEFAULT_STADIUM: FloorSeed = {
+  name: 'Стадион',
+  level: 0,
+  rooms: [
+    { code: 'STADION', name: 'Стадион', type: 'STADIUM', x: 20, y: 20, width: 760, height: 380 },
+    { code: 'TRIBUNA', name: 'Трибуна', type: 'OTHER', x: 800, y: 20, width: 180, height: 250 },
+    { code: 'RAZDEVALKA', name: 'Раздевалка', type: 'OTHER', x: 800, y: 285, width: 180, height: 115 },
+  ],
+};
+
 async function createFloor(prisma: PrismaClient, buildingId: string, f: FloorSeed, sortOrder: number) {
   await prisma.floor.create({
     data: {
@@ -131,7 +141,7 @@ async function createFloor(prisma: PrismaClient, buildingId: string, f: FloorSee
 export async function seedDefaults(prisma: PrismaClient): Promise<void> {
   await prisma.systemState.upsert({ where: { id: 1 }, create: { id: 1 }, update: {} });
   const existing = await prisma.building.count();
-  if (existing > 0) return;
+  if (existing > 0) return ensureStadium(prisma);
   await prisma.$transaction(
     async (tx) => {
       const school = await tx.building.create({ data: { kind: 'SCHOOL', name: 'Школа' } });
@@ -142,4 +152,24 @@ export async function seedDefaults(prisma: PrismaClient): Promise<void> {
     { timeout: 30_000 },
   );
   logger.info('Создана схема школы по умолчанию');
+  await ensureStadium(prisma);
+}
+
+/** Стадион добавляется один раз — в том числе в уже работающие школы, созданные раньше. */
+async function ensureStadium(prisma: PrismaClient): Promise<void> {
+  const state = await prisma.systemState.findUnique({ where: { id: 1 }, select: { stadiumSeeded: true } });
+  if (state?.stadiumSeeded) return;
+  await prisma.$transaction(
+    async (tx) => {
+      // Отметку ставим условно: при одновременном запуске нескольких экземпляров стадион создаст только один
+      const claimed = await tx.systemState.updateMany({ where: { id: 1, stadiumSeeded: false }, data: { stadiumSeeded: true } });
+      if (claimed.count === 0) return;
+      if ((await tx.building.count({ where: { kind: 'STADIUM' } })) > 0) return;
+      const stadium = await tx.building.create({ data: { kind: 'STADIUM', name: 'Стадион' } });
+      await createFloor(tx as PrismaClient, stadium.id, DEFAULT_STADIUM, 0);
+    },
+    { timeout: 30_000 },
+  );
+  await prisma.systemState.update({ where: { id: 1 }, data: { dataVersion: { increment: 1 } } });
+  logger.info('Добавлен стадион');
 }

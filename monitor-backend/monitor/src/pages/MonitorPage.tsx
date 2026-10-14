@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, Info, LogOut, Users, Utensils, Wifi, WifiOff } from 'lucide-react';
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, Info, LogOut, Trophy, Users, Utensils, Wifi, WifiOff } from 'lucide-react';
 import { useLive, type ConnectionState, type LiveEvent } from '../lib/useLive';
 import { logout } from '../lib/api';
 import type { Snapshot } from '../lib/types';
@@ -124,10 +124,16 @@ function useIdleScroll(ref: React.RefObject<HTMLDivElement | null>, enabled: boo
   }, [ref, enabled, idleSeconds, deps]);
 }
 
+const VIEWS = [
+  { kind: 'SCHOOL', label: 'Школа', Icon: Building2, pill: 'bg-brand-600 shadow-brand-600/30' },
+  { kind: 'CANTEEN', label: 'Столовая', Icon: Utensils, pill: 'bg-orange-500 shadow-orange-500/30' },
+  { kind: 'STADIUM', label: 'Стадион', Icon: Trophy, pill: 'bg-emerald-600 shadow-emerald-600/30' },
+] as const;
+
 export function MonitorPage() {
   const navigate = useNavigate();
   const { snapshot, connection, events, receivedAt } = useLive(() => navigate('/monitor/login', { replace: true }));
-  const [view, setView] = useState<'SCHOOL' | 'CANTEEN'>('SCHOOL');
+  const [view, setView] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM'>('SCHOOL');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [epochs, setEpochs] = useState(new Map<string, number>());
   const prevRooms = useRef(new Map<string, string | null>());
@@ -192,8 +198,9 @@ export function MonitorPage() {
   useIdleScroll(scrollRef, attract && !spotlight, snapshot?.monitor.idleAfterSeconds ?? 90, view);
 
   const building = useMemo(() => snapshot?.buildings.find((b) => b.kind === view), [snapshot, view]);
-  const inCanteen = snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === 'CANTEEN').length ?? 0;
-  const inSchool = snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === 'SCHOOL').length ?? 0;
+  const countIn = (kind: string) => snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === kind).length ?? 0;
+  // Вкладки зданий: школа и столовая всегда, стадион — если он есть в схеме
+  const views = VIEWS.filter((v) => v.kind !== 'STADIUM' || snapshot?.buildings.some((b) => b.kind === 'STADIUM'));
 
   if (!snapshot) {
     return (
@@ -218,6 +225,7 @@ export function MonitorPage() {
           <div className="ambient left-[-10%] top-[-20%] h-[60vh] w-[50vw] bg-brand-500/20 dark:bg-brand-500/25" />
           <div className="ambient bottom-[-25%] right-[10%] h-[55vh] w-[45vw] bg-sky-400/15 dark:bg-indigo-500/20" style={{ animationDelay: '-14s' }} />
           {view === 'CANTEEN' && <div className="ambient left-[30%] top-[30%] h-[40vh] w-[40vw] bg-orange-400/15" style={{ animationDelay: '-7s' }} />}
+          {view === 'STADIUM' && <div className="ambient left-[30%] top-[30%] h-[40vh] w-[40vw] bg-emerald-400/15" style={{ animationDelay: '-7s' }} />}
         </div>
       )}
 
@@ -225,19 +233,19 @@ export function MonitorPage() {
       <header className="relative z-20 flex items-center gap-4 border-b border-slate-200/70 bg-white/70 px-6 py-3 backdrop-blur-xl dark:border-white/5 dark:bg-brand-950/60">
         <Logo size={46} subtitle="Монитор ресепшена" />
         <div className="ml-6 flex rounded-2xl bg-slate-100 p-1 dark:bg-white/5">
-          {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
+          {views.map(({ kind: k, label, Icon, pill }) => (
             <button
               key={k}
               onClick={() => setView(k)}
               className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-base font-semibold transition-colors ${view === k ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'}`}
             >
               {view === k && (
-                <motion.span layoutId="view-pill" className={`absolute inset-0 rounded-xl shadow-lg ${k === 'SCHOOL' ? 'bg-brand-600 shadow-brand-600/30' : 'bg-orange-500 shadow-orange-500/30'}`} transition={{ type: 'spring', stiffness: 300, damping: 28 }} />
+                <motion.span layoutId="view-pill" className={`absolute inset-0 rounded-xl shadow-lg ${pill}`} transition={{ type: 'spring', stiffness: 300, damping: 28 }} />
               )}
               <span className="relative flex items-center gap-2">
-                {k === 'SCHOOL' ? <Building2 className="h-5 w-5" /> : <Utensils className="h-5 w-5" />}
-                {k === 'SCHOOL' ? 'Школа' : 'Столовая'}
-                <span className={`rounded-full px-2 text-xs ${view === k ? 'bg-white/25' : 'bg-slate-200 dark:bg-white/10'}`}>{k === 'SCHOOL' ? inSchool : inCanteen}</span>
+                <Icon className="h-5 w-5" />
+                {label}
+                <span className={`rounded-full px-2 text-xs ${view === k ? 'bg-white/25' : 'bg-slate-200 dark:bg-white/10'}`}>{countIn(k)}</span>
               </span>
             </button>
           ))}
@@ -307,9 +315,9 @@ export function MonitorPage() {
               {building && (
                 <motion.div
                   key={building.kind}
-                  initial={{ opacity: 0, x: building.kind === 'CANTEEN' ? 60 : -60, filter: 'blur(6px)' }}
+                  initial={{ opacity: 0, x: building.kind === 'SCHOOL' ? -60 : 60, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, x: building.kind === 'CANTEEN' ? 60 : -60, filter: 'blur(6px)' }}
+                  exit={{ opacity: 0, x: building.kind === 'SCHOOL' ? -60 : 60, filter: 'blur(6px)' }}
                   transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <BuildingMap
@@ -319,8 +327,9 @@ export function MonitorPage() {
                     focusTeacherId={focusId ?? spotlight?.id ?? null}
                     scrollRef={scrollRef}
                     epochs={epochs}
-                    maxFloorHeight={Math.max(240, (window.innerHeight - 260) / 2)}
-                    columns={listOpen || building.kind === 'CANTEEN' ? 1 : 2}
+                    // Школа — по 2 этажа в высоту экрана; столовая и стадион (один этаж) — крупно, на весь экран
+                    maxFloorHeight={building.kind === 'SCHOOL' ? Math.max(240, (window.innerHeight - 260) / 2) : Math.max(300, window.innerHeight - 330)}
+                    columns={listOpen || building.kind !== 'SCHOOL' ? 1 : 2}
                   />
                 </motion.div>
               )}

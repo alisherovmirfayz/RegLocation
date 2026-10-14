@@ -44,12 +44,14 @@ enum RoomType {
   LAB
   CANTEEN
   KITCHEN
+  STADIUM
   OTHER
 }
 
 enum BuildingKind {
   SCHOOL
   CANTEEN
+  STADIUM
 }
 
 enum TimetableStatus {
@@ -373,5 +375,7 @@ model SystemState {
   lastAutoCheckoutDate   String?
   /// Растёт при изменении учителей, расписаний и кабинетов — по нему все экземпляры сервера обновляют кеш.
   dataVersion            Int       @default(0)
+  /// Стадион добавлен в схему (один раз; если директор удалит его — не возвращается).
+  stadiumSeeded          Boolean   @default(false)
   updatedAt              DateTime  @updatedAt
 }

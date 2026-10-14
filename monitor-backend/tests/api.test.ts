@@ -494,6 +494,35 @@ describe('Socket.IO', () => {
   });
 });
 
+describe('Стадион', () => {
+  it('есть в схеме; урок с кабинетом «Стадион» — учитель на стадионе; удалённый стадион не возвращается', async () => {
+    const buildings = (await director.get('/api/director/buildings')).body as { id: string; kind: string; floors: { id: string; rooms: { code: string; type: string }[] }[] }[];
+    const stadium = buildings.find((b) => b.kind === 'STADIUM')!;
+    expect(stadium.floors[0]!.rooms.some((r) => r.code === 'STADION' && r.type === 'STADIUM')).toBe(true);
+
+    h.clock.set('2026-10-19', '10:00'); // понедельник, 2-й урок
+    const t = h.agent();
+    await t.login('teacher', teacherCreds.login, teacherCreds.password);
+    const before = (await t.get('/api/teacher/timetable')).body.timetable?.entries ?? [];
+    const saved = await t.put('/api/teacher/timetable', { entries: [{ dayOfWeek: 1, lessonNumber: 2, className: '7B', roomLabel: 'Стадион' }] });
+    expect(saved.status).toBe(200);
+    await t.post('/api/teacher/check-in');
+    const state = (await t.get('/api/teacher/state')).body;
+    expect(state.location).toMatchObject({ reason: 'LESSON', buildingKind: 'STADIUM', roomName: 'Стадион' });
+
+    // Директор удалил стадион — при следующем запуске сервера он не появляется снова
+    await prisma.building.delete({ where: { id: stadium.id } });
+    const { seedDefaults } = await import('../src/domain/seed');
+    await seedDefaults(prisma);
+    expect(await prisma.building.count({ where: { kind: 'STADIUM' } })).toBe(0);
+    await t.post('/api/teacher/check-out');
+    // Возвращаем прежнее расписание для следующих тестов
+    const restore = before.map((e: { dayOfWeek: number; lessonNumber: number; className: string; roomLabel: string }) => ({ dayOfWeek: e.dayOfWeek, lessonNumber: e.lessonNumber, className: e.className, roomLabel: e.roomLabel }));
+    expect((await t.put('/api/teacher/timetable', { entries: restore })).status).toBe(200);
+    h.clock.set('2026-10-12', '10:00');
+  });
+});
+
 describe('Просмотр логина и пароля директором', () => {
   it('учитель: пароль при создании и после «Выдать новый» можно посмотреть; в базе он зашифрован; просмотр в журнале', async () => {
     const created = await director.post('/api/director/teachers', { firstName: 'Пароль', lastName: 'Смотрелкин', positionTitle: 'Химия' });
