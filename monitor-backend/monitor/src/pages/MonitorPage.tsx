@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Building2, CalendarClock, FlaskConical, Info, LogOut, Utensils, Wifi, WifiOff } from 'lucide-react';
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, Info, LogOut, Users, Utensils, Wifi, WifiOff } from 'lucide-react';
 import { useLive, type ConnectionState, type LiveEvent } from '../lib/useLive';
 import { logout } from '../lib/api';
 import type { Snapshot } from '../lib/types';
 import { Logo } from '../components/Logo';
+import { LangSwitch } from '../components/LangSwitch';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BuildingMap } from '../monitor/BuildingMap';
 import { TeacherList } from '../monitor/TeacherList';
@@ -131,6 +132,23 @@ export function MonitorPage() {
   const [epochs, setEpochs] = useState(new Map<string, number>());
   const prevRooms = useRef(new Map<string, string | null>());
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Список учителей спрятан за стрелкой; пока он закрыт, схема показывает 4 этажа (2 × 2)
+  const [listOpen, setListOpen] = useState(() => {
+    try {
+      return localStorage.getItem('rl.monitor.list') === 'open';
+    } catch {
+      return false;
+    }
+  });
+  const toggleList = () =>
+    setListOpen((v) => {
+      try {
+        localStorage.setItem('rl.monitor.list', v ? 'closed' : 'open');
+      } catch {
+        /* приватный режим браузера */
+      }
+      return !v;
+    });
   const clock = useClock(snapshot, receivedAt);
 
   // Тема монитора из настроек директора
@@ -259,6 +277,7 @@ export function MonitorPage() {
             </div>
             <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">в школе</div>
           </div>
+          <LangSwitch />
           <ConnectionBadge state={connection} />
           <button
             onClick={async () => {
@@ -276,9 +295,9 @@ export function MonitorPage() {
 
       {clock && <PeriodProgress snapshot={snapshot} minutes={clock.minutes} seconds={clock.sec} />}
 
-      {/* Основная область: 74% схема, 26% список */}
-      <main className="relative z-10 grid min-h-0 flex-1" style={{ gridTemplateColumns: '74fr 26fr' }}>
-        <section className="relative min-h-0 border-r border-slate-200/70 dark:border-white/5">
+      {/* Основная область: схема; список учителей выдвигается справа по стрелке */}
+      <main className="relative z-10 flex min-h-0 flex-1">
+        <section className="relative min-h-0 min-w-0 flex-1 border-r border-slate-200/70 dark:border-white/5">
           {snapshot.monitor.ambientEffects && <Particles />}
           <div className="absolute left-4 top-3 z-30 flex items-center gap-1.5 rounded-lg bg-white/80 px-2.5 py-1 text-[11px] text-slate-500 shadow-sm backdrop-blur dark:bg-slate-900/70 dark:text-slate-400">
             <Info className="h-3.5 w-3.5" /> Расчётное местоположение по расписанию, а не подтверждённое физическое нахождение
@@ -300,7 +319,8 @@ export function MonitorPage() {
                     focusTeacherId={focusId ?? spotlight?.id ?? null}
                     scrollRef={scrollRef}
                     epochs={epochs}
-                    maxFloorHeight={Math.max(300, (window.innerHeight - 190) / 2)}
+                    maxFloorHeight={Math.max(240, (window.innerHeight - 260) / 2)}
+                    columns={listOpen || building.kind === 'CANTEEN' ? 1 : 2}
                   />
                 </motion.div>
               )}
@@ -310,9 +330,33 @@ export function MonitorPage() {
           <SpotlightCard teacher={spotlight} />
           {clock && <InfoTicker snapshot={snapshot} minutes={clock.minutes} />}
         </section>
-        <aside className="min-h-0 bg-white/40 backdrop-blur-sm dark:bg-white/[0.02]">
-          <TeacherList teachers={snapshot.teachers} showAbsent={snapshot.monitor.showAbsentInList} focusId={focusId} onFocus={setFocusId} />
-        </aside>
+        {/* Стрелка: открыть / закрыть список учителей */}
+        <button
+          onClick={toggleList}
+          className="group relative z-20 flex w-11 shrink-0 flex-col items-center justify-center gap-3 border-r border-slate-200/70 bg-white/50 text-slate-500 backdrop-blur transition hover:bg-white/80 hover:text-brand-600 dark:border-white/5 dark:bg-white/[0.03] dark:text-slate-400 dark:hover:bg-white/[0.07] dark:hover:text-white"
+          title={listOpen ? 'Скрыть список учителей' : 'Показать список учителей'}
+          aria-expanded={listOpen}
+        >
+          {listOpen ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6 transition group-hover:-translate-x-0.5" />}
+          <Users className="h-5 w-5" />
+          <span className="text-xs font-semibold uppercase tracking-widest [writing-mode:vertical-rl]">Учителя</span>
+        </button>
+        <AnimatePresence initial={false}>
+          {listOpen && (
+            <motion.aside
+              key="list"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: '26vw', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="min-h-0 overflow-hidden bg-white/40 backdrop-blur-sm dark:bg-white/[0.02]"
+            >
+              <div className="h-full w-[26vw]">
+                <TeacherList teachers={snapshot.teachers} showAbsent={snapshot.monitor.showAbsentInList} focusId={focusId} onFocus={setFocusId} />
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

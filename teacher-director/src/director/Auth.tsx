@@ -5,6 +5,7 @@ import { KeyRound, Lock, Mail, ShieldCheck, User } from 'lucide-react';
 import { directorApi, login, setCsrf, type SessionInfo } from '../lib/api';
 import { Logo } from '../components/Logo';
 import { Alert, Button, Field, Modal, PageLoader, PasswordStrength, ThemeToggle } from '../components/ui';
+import { LangSwitch } from '../components/LangSwitch';
 
 interface PublicStatus {
   ownerRegistered: boolean;
@@ -28,7 +29,8 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle?: st
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-10">
       <div className="ambient left-[-10%] top-[-10%] h-[50vh] w-[50vw] bg-brand-500/20" />
       <div className="ambient bottom-[-20%] right-[-10%] h-[50vh] w-[50vw] bg-indigo-500/15" style={{ animationDelay: '-12s' }} />
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <LangSwitch />
         <ThemeToggle />
       </div>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="relative w-full max-w-md">

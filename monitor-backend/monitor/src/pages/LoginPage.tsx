@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Loader2, Lock, MonitorSmartphone, User } from 'lucide-react';
 import { login } from '../lib/api';
 import { Logo } from '../components/Logo';
+import { LangSwitch } from '../components/LangSwitch';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -29,6 +30,9 @@ export function LoginPage() {
     <div className="relative flex h-full items-center justify-center overflow-hidden px-4">
       <div className="ambient left-[-10%] top-[-10%] h-[60vh] w-[50vw] bg-brand-500/25" />
       <div className="ambient bottom-[-20%] right-[-5%] h-[55vh] w-[45vw] bg-indigo-500/20" style={{ animationDelay: '-12s' }} />
+      <div className="absolute right-5 top-5 z-10">
+        <LangSwitch />
+      </div>
       <motion.form
         onSubmit={submit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}

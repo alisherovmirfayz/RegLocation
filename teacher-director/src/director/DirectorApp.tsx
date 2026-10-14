@@ -1,22 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  Building2, CalendarDays, ClipboardCheck, History, Home, KeyRound, LayoutDashboard, LogOut, Map, Menu, MonitorPlay, Settings, UserPlus, Users, X,
-} from 'lucide-react';
+import { Building2, History, KeyRound, LogOut, Map, Menu, Settings, Users, X } from 'lucide-react';
 import { loadSession, logout, onUnauthorized, type SessionInfo } from '../lib/api';
 import { useSocket, type Connection } from '../lib/useSocket';
 import type { AuditRow, Snapshot } from '../lib/types';
 import { Logo } from '../components/Logo';
 import { Avatar } from '../components/Avatar';
 import { Badge, PageLoader, ThemeToggle } from '../components/ui';
+import { LangSwitch } from '../components/LangSwitch';
 import { DirectorLogin, DirectorRegister } from './Auth';
-import { Dashboard } from './pages/Dashboard';
 import { TeachersPage } from './pages/Teachers';
 import { AddTeacherPage } from './pages/AddTeacher';
-import { TimetablesPage } from './pages/Timetables';
-import { AttendancePage } from './pages/Attendance';
-import { MonitorControlPage } from './pages/MonitorControl';
 import { SchoolEditorPage } from './pages/SchoolEditor';
 import { FloorsRoomsPage } from './pages/FloorsRooms';
 import { MonitorAccessPage } from './pages/MonitorAccess';
@@ -36,12 +31,8 @@ const Ctx = createContext<DirectorCtx | null>(null);
 export const useDirector = () => useContext(Ctx)!;
 
 const NAV = [
-  { to: '/director', label: 'Главная', icon: Home, end: true },
+  // «Добавить учителя» — кнопка на странице «Учителя»
   { to: '/director/teachers', label: 'Учителя', icon: Users },
-  { to: '/director/teachers/new', label: 'Добавить учителя', icon: UserPlus },
-  { to: '/director/timetables', label: 'Расписания', icon: CalendarDays },
-  { to: '/director/attendance', label: 'Посещаемость', icon: ClipboardCheck },
-  { to: '/director/monitor', label: 'Управление монитором', icon: MonitorPlay },
   { to: '/director/editor', label: 'Редактор школы', icon: Map },
   { to: '/director/floors', label: 'Этажи и кабинеты', icon: Building2 },
   { to: '/director/access', label: 'Доступ к монитору', icon: KeyRound },
@@ -56,7 +47,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavLink
           key={n.to}
           to={n.to}
-          end={n.end || n.to === '/director/teachers'}
+          end={false}
           onClick={onNavigate}
           className={({ isActive }) =>
             `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5'}`
@@ -119,15 +110,12 @@ function Shell({ children }: { children: ReactNode }) {
             <span className={`pulse-dot relative inline-block h-2 w-2 rounded-full bg-current ${connection === 'online' ? 'text-emerald-500' : 'text-amber-500'}`} />
             <span className="hidden text-slate-500 sm:inline">{connection === 'online' ? 'Синхронизировано' : 'Переподключение…'}</span>
           </div>
-          {snapshot?.clock.simulated && (
-            <NavLink to="/director/monitor">
-              <Badge color="amber">ТЕСТОВЫЙ РЕЖИМ</Badge>
-            </NavLink>
-          )}
+          {snapshot?.clock.simulated && <Badge color="amber">ТЕСТОВЫЙ РЕЖИМ</Badge>}
           <div className="ml-auto flex items-center gap-2">
             <a href="/teacher" className="hidden text-sm text-slate-500 hover:text-brand-600 md:inline">
               Сайт учителя
             </a>
+            <LangSwitch />
             <ThemeToggle />
             <div className="flex items-center gap-2 rounded-xl px-2 py-1">
               <Avatar name={session.user} url={null} size={32} ring={false} />
@@ -180,18 +168,15 @@ function Protected({ session, onLost }: { session: SessionInfo; onLost: () => vo
       <Shell>
         <AnimatePresence mode="wait">
           <Routes>
-            <Route index element={<Dashboard />} />
+            <Route index element={<Navigate to="/director/teachers" replace />} />
             <Route path="teachers" element={<TeachersPage />} />
             <Route path="teachers/new" element={<AddTeacherPage />} />
-            <Route path="timetables" element={<TimetablesPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="monitor" element={<MonitorControlPage />} />
             <Route path="editor" element={<SchoolEditorPage />} />
             <Route path="floors" element={<FloorsRoomsPage />} />
             <Route path="access" element={<MonitorAccessPage />} />
             <Route path="history" element={<AuditPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/director" replace />} />
+            <Route path="*" element={<Navigate to="/director/teachers" replace />} />
           </Routes>
         </AnimatePresence>
       </Shell>
@@ -222,4 +207,3 @@ export function DirectorApp() {
   return <Protected session={session} onLost={lost} />;
 }
 
-export { LayoutDashboard };

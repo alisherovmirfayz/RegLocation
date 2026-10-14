@@ -56,7 +56,7 @@ export function AddTeacherPage() {
       <CredentialsModal
         creds={created?.credentials ?? null}
         title={created ? `Аккаунт: ${created.teacher.lastName} ${created.teacher.firstName}` : ''}
-        note="Учитель сможет сменить пароль в своём профиле."
+        note="Посмотреть логин и пароль позже можно кнопкой «Логин и пароль» в списке учителей."
         onClose={() => {
           setCreated(null);
           navigate('/director/teachers');

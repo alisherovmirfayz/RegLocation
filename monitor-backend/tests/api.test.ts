@@ -494,6 +494,44 @@ describe('Socket.IO', () => {
   });
 });
 
+describe('Просмотр логина и пароля директором', () => {
+  it('учитель: пароль при создании и после «Выдать новый» можно посмотреть; в базе он зашифрован; просмотр в журнале', async () => {
+    const created = await director.post('/api/director/teachers', { firstName: 'Пароль', lastName: 'Смотрелкин', positionTitle: 'Химия' });
+    const { login, password } = created.body.credentials;
+    const id = created.body.teacher.id;
+    const view = await director.get(`/api/director/teachers/${id}/credentials`);
+    expect(view.body).toEqual({ login, password });
+    // В базе нет пароля открытым текстом
+    const row = await prisma.user.findUnique({ where: { login } });
+    expect(row!.passwordEnc).toBeTruthy();
+    expect(row!.passwordEnc).not.toContain(password);
+    // Новый пароль — виден новый, старый не работает
+    const reset = await director.post(`/api/director/teachers/${id}/reset-password`);
+    expect((await director.get(`/api/director/teachers/${id}/credentials`)).body.password).toBe(reset.body.credentials.password);
+    expect((await h.agent().login('teacher', login, password)).status).toBe(401);
+    expect((await h.agent().login('teacher', login, reset.body.credentials.password)).status).toBe(200);
+    const log = await prisma.auditLog.findFirst({ where: { action: 'teacher.credentials_viewed', targetId: id } });
+    expect(log?.summary).toContain('Смотрелкин');
+    // Учитель не может смотреть чужие пароли
+    const t = h.agent();
+    await t.login('teacher', login, reset.body.credentials.password);
+    expect((await t.get(`/api/director/teachers/${id}/credentials`)).status).toBe(401);
+  });
+
+  it('аккаунт, созданный до появления функции: пароль не показывается, можно выдать новый', async () => {
+    const created = await director.post('/api/director/teachers', { firstName: 'Старый', lastName: 'Аккаунтов', positionTitle: 'История' });
+    await prisma.user.update({ where: { login: created.body.credentials.login }, data: { passwordEnc: null } });
+    const view = await director.get(`/api/director/teachers/${created.body.teacher.id}/credentials`);
+    expect(view.body).toEqual({ login: created.body.credentials.login, password: null });
+  });
+
+  it('монитор: логин и пароль можно посмотреть', async () => {
+    const acc = await director.post('/api/director/reception', { label: 'Холл' });
+    const view = await director.get(`/api/director/reception/${acc.body.account.id}/credentials`);
+    expect(view.body).toEqual(acc.body.credentials);
+  });
+});
+
 describe('Учебный день 08:00–17:00', () => {
   it('«Я в школе» до 08:00 и в выходной недоступна, с 08:00 — доступна; в 17:00 учитель сразу «Не в школе»', async () => {
     const t = h.agent();

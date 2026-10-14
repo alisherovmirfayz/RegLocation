@@ -86,6 +86,8 @@ model User {
   role          Role
   login         String        @unique
   passwordHash  String
+  /// Копия выданного директором пароля, зашифрованная AES-256-GCM (ключ CREDENTIALS_KEY), — для просмотра директором.
+  passwordEnc   String?
   firstName     String
   lastName      String
   email         String?       @unique

@@ -68,6 +68,7 @@ export function BuildingMap({
   scrollRef,
   epochs,
   maxFloorHeight,
+  columns = 1,
 }: {
   building: Building;
   teachers: Teacher[];
@@ -78,6 +79,8 @@ export function BuildingMap({
   epochs: Map<string, number>;
   /** Ограничение высоты этажа (px), чтобы на экране помещалось несколько этажей */
   maxFloorHeight?: number;
+  /** Сколько этажей в ряд (2 — на мониторе без списка учителей видно сразу 4 этажа) */
+  columns?: number;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -95,23 +98,33 @@ export function BuildingMap({
   const isCanteen = building.kind === 'CANTEEN';
 
   const geometry = useMemo(() => {
+    const cols = Math.max(1, Math.min(columns, floors.length || 1));
+    const colGap = cols > 1 ? FLOOR_GAP : 0;
     const inner = Math.max(200, width - PAD * 2);
+    const colW = (inner - colGap * (cols - 1)) / cols;
     let top = PAD;
+    let rowHeight = 0;
     const rooms = new Map<string, { room: Room; x: number; y: number; w: number; h: number }>();
-    const floorBoxes = floors.map((f) => {
-      const fw = maxFloorHeight ? Math.min(inner, (maxFloorHeight * f.width) / f.height) : inner;
-      const left = PAD + (inner - fw) / 2;
+    const floorBoxes = floors.map((f, i) => {
+      const col = i % cols;
+      // Новый ряд этажей начинается ниже самого высокого этажа предыдущего ряда
+      if (col === 0 && i > 0) {
+        top += rowHeight + FLOOR_GAP;
+        rowHeight = 0;
+      }
+      const fw = maxFloorHeight ? Math.min(colW, (maxFloorHeight * f.width) / f.height) : colW;
+      const left = PAD + col * (colW + colGap) + (colW - fw) / 2;
       const scale = fw / f.width;
       const h = f.height * scale;
       const box = { floor: f, top, height: h + FLOOR_HEADER, scale, left: left - PAD, width: fw + PAD * 2, planLeft: left, planTop: top + FLOOR_HEADER, planW: fw, planH: h };
       for (const r of f.rooms) {
         rooms.set(r.id, { room: r, x: left + r.x * scale, y: top + FLOOR_HEADER + r.y * scale, w: r.width * scale, h: r.height * scale });
       }
-      top += h + FLOOR_HEADER + FLOOR_GAP;
+      rowHeight = Math.max(rowHeight, h + FLOOR_HEADER);
       return box;
     });
-    return { rooms, floorBoxes, total: top };
-  }, [floors, width, maxFloorHeight]);
+    return { rooms, floorBoxes, total: top + rowHeight + PAD };
+  }, [floors, width, maxFloorHeight, columns]);
 
   const byRoom = useMemo(() => {
     const m = new Map<string, Teacher[]>();

@@ -6,6 +6,10 @@ import './styles.css';
 import { ToastProvider } from './components/ui';
 import { TeacherApp } from './teacher/TeacherApp';
 import { DirectorApp } from './director/DirectorApp';
+import { startI18n } from './lib/i18n';
+
+// Русский / узбекский: перевод интерфейса по выбору пользователя
+startI18n();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

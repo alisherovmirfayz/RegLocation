@@ -6,6 +6,10 @@ import './styles.css';
 import { getSession } from './lib/api';
 import { LoginPage } from './pages/LoginPage';
 import { MonitorPage } from './pages/MonitorPage';
+import { startI18n } from './lib/i18n';
+
+// Русский / узбекский: перевод интерфейса по выбору пользователя
+startI18n();
 
 /** Монитор доступен только после входа: иначе — /monitor/login. */
 function Protected() {

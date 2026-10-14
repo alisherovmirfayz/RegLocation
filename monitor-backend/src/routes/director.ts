@@ -7,6 +7,7 @@ import { requireRole, revokeUserSessions } from '../auth/sessions';
 import { ah, badRequest, conflict, forbidden, notFound, parse } from '../lib/errors';
 import { hashPassword, passwordProblems, verifyPassword } from '../lib/passwords';
 import { generatePassword, generateUniqueLogin } from '../lib/credentials';
+import { openPassword, sealPassword } from '../lib/vault';
 import { audit } from '../lib/audit';
 import { assertFileType, processAvatar, processLogo, uploader } from '../lib/upload';
 import { localToUtc, parseHM, toLocal, formatHM, DAY_NAMES_RU } from '../lib/time';
@@ -111,7 +112,7 @@ export function directorRouter(ctx: AppContext): Router {
       const password = generatePassword();
       const passwordHash = await hashPassword(password);
       const teacher = await ctx.prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({ data: { role: 'TEACHER', login, passwordHash, firstName: data.firstName, lastName: data.lastName } });
+        const user = await tx.user.create({ data: { role: 'TEACHER', login, passwordHash, passwordEnc: sealPassword(ctx.config, password), firstName: data.firstName, lastName: data.lastName } });
         const subjectId = await upsertSubject(tx, data.subject ?? (kind === 'TEACHER' ? data.positionTitle : null));
         const classIds = await upsertClasses(tx, classes);
         return tx.teacher.create({
@@ -185,10 +186,24 @@ export function directorRouter(ctx: AppContext): Router {
     ah(async (req, res) => {
       const t = await loadTeacher(String(req.params.id));
       const password = generatePassword();
-      await ctx.prisma.user.update({ where: { id: t.userId }, data: { passwordHash: await hashPassword(password), failedLogins: 0, lockedUntil: null } });
+      await ctx.prisma.user.update({
+        where: { id: t.userId },
+        data: { passwordHash: await hashPassword(password), passwordEnc: sealPassword(ctx.config, password), failedLogins: 0, lockedUntil: null },
+      });
       await revokeUserSessions(ctx, t.userId);
       await audit(ctx, req, { action: 'teacher.password_reset', summary: `Сброшен пароль: ${fullName(t.user)}`, targetType: 'teacher', targetId: t.id });
       res.json({ credentials: { login: t.user.login, password } });
+    }),
+  );
+
+  // Логин и пароль учителя (пароль хранится зашифрованным; каждый просмотр — в журнале)
+  r.get(
+    '/teachers/:id/credentials',
+    ah(async (req, res) => {
+      const t = await loadTeacher(String(req.params.id));
+      const password = openPassword(ctx.config, t.user.passwordEnc);
+      await audit(ctx, req, { action: 'teacher.credentials_viewed', summary: `Просмотр логина и пароля: ${fullName(t.user)}`, targetType: 'teacher', targetId: t.id });
+      res.set('Cache-Control', 'no-store').json({ login: t.user.login, password });
     }),
   );
 
@@ -725,7 +740,7 @@ export function directorRouter(ctx: AppContext): Router {
       const login = await generateUniqueLogin('', label, loginExists, 'mon.');
       const password = generatePassword();
       const user = await ctx.prisma.user.create({
-        data: { role: 'RECEPTION', login, passwordHash: await hashPassword(password), firstName: label, lastName: 'Монитор', receptionAccount: { create: { label } } },
+        data: { role: 'RECEPTION', login, passwordHash: await hashPassword(password), passwordEnc: sealPassword(ctx.config, password), firstName: label, lastName: 'Монитор', receptionAccount: { create: { label } } },
       });
       await audit(ctx, req, { action: 'reception.created', summary: `Создан доступ к монитору «${label}», логин ${login}`, targetType: 'user', targetId: user.id });
       res.status(201).json({ account: (await receptionView()).find((a) => a.userId === user.id), credentials: { login, password } });
@@ -737,10 +752,23 @@ export function directorRouter(ctx: AppContext): Router {
     ah(async (req, res) => {
       const a = await loadReception(String(req.params.id));
       const password = generatePassword();
-      await ctx.prisma.user.update({ where: { id: a.userId }, data: { passwordHash: await hashPassword(password), failedLogins: 0, lockedUntil: null } });
+      await ctx.prisma.user.update({
+        where: { id: a.userId },
+        data: { passwordHash: await hashPassword(password), passwordEnc: sealPassword(ctx.config, password), failedLogins: 0, lockedUntil: null },
+      });
       await revokeUserSessions(ctx, a.userId);
       await audit(ctx, req, { action: 'reception.password_reset', summary: `Сброшен пароль монитора «${a.label}»`, targetType: 'user', targetId: a.userId });
       res.json({ credentials: { login: a.user.login, password } });
+    }),
+  );
+
+  r.get(
+    '/reception/:id/credentials',
+    ah(async (req, res) => {
+      const a = await loadReception(String(req.params.id));
+      const password = openPassword(ctx.config, a.user.passwordEnc);
+      await audit(ctx, req, { action: 'reception.credentials_viewed', summary: `Просмотр логина и пароля монитора «${a.label}»`, targetType: 'user', targetId: a.userId });
+      res.set('Cache-Control', 'no-store').json({ login: a.user.login, password });
     }),
   );
 

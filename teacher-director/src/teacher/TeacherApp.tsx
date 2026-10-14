@@ -8,6 +8,7 @@ import type { TeacherState } from '../lib/types';
 import { Logo } from '../components/Logo';
 import { Avatar } from '../components/Avatar';
 import { Alert, Button, PageLoader, ThemeToggle } from '../components/ui';
+import { LangSwitch } from '../components/LangSwitch';
 import { TeacherHome } from './TeacherHome';
 import { TeacherSchedule } from './TeacherSchedule';
 import { TeacherProfile } from './TeacherProfile';
@@ -32,6 +33,9 @@ function TeacherLogin({ onDone }: { onDone: (s: SessionInfo) => void }) {
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-5 py-10">
       <div className="ambient left-[-30%] top-[-10%] h-[45vh] w-[80vw] bg-brand-500/20" />
       <div className="ambient bottom-[-15%] right-[-25%] h-[40vh] w-[70vw] bg-sky-400/20" style={{ animationDelay: '-12s' }} />
+      <div className="absolute right-4 top-4 z-10">
+        <LangSwitch />
+      </div>
       <motion.form
         onSubmit={submit}
         initial={{ opacity: 0, y: 24 }}
@@ -108,6 +112,7 @@ function TopBar({ state, connection }: { state: TeacherState | null; connection:
           >
             <CalendarDays className="h-4 w-4" /> Расписание
           </button>
+          <LangSwitch />
           <ThemeToggle />
           <button onClick={() => navigate('/teacher/profile')} className="rounded-full p-0.5 transition active:scale-95" aria-label="Профиль">
             {state ? <Avatar name={state.teacher} url={state.teacher.avatarUrl} size={36} /> : <div className="h-9 w-9 rounded-full bg-slate-200" />}

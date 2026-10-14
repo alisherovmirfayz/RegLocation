@@ -61,6 +61,8 @@ const EnvSchema = z.object({
   SCHEDULER_INTERVAL_MS: z.coerce.number().int().positive().default(10_000),
   /** socket — постоянное соединение Socket.IO (Railway, Render, Docker); poll — опрос (Vercel и другие serverless). */
   REALTIME: z.enum(['socket', 'poll']).default('socket'),
+  /** Ключ шифрования паролей, которые директор может посмотреть (учителя, монитор). */
+  CREDENTIALS_KEY: z.string().min(16, 'CREDENTIALS_KEY — не короче 16 символов').optional(),
   /** Секрет для ежедневной задачи Vercel Cron (/api/cron/daily). */
   CRON_SECRET: z.string().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

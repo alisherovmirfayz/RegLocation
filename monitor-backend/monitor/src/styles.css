@@ -156,3 +156,25 @@ body {
     animation: none;
   }
 }
+
+/* Выпадающие списки: браузер рисует варианты системными цветами — задаём их под тему сайта */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+.dark select option,
+.dark select optgroup {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+select option:checked {
+  background-color: #2447e0;
+  color: #ffffff;
+}

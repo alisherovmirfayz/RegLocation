@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Archive, ArchiveRestore, Ban, Camera, CalendarClock, KeyRound, Pencil, Trash2, Unlock, UserPlus, Users } from 'lucide-react';
+import { Camera, Eye, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { directorApi } from '../../lib/api';
-import { fmtDateTime, fmtTime, KIND_LABEL, type StaffKind, type TeacherListItem } from '../../lib/types';
+import { fmtDateTime, KIND_LABEL, type StaffKind, type TeacherListItem } from '../../lib/types';
 import { Avatar } from '../../components/Avatar';
-import { Alert, Badge, Button, CredentialsModal, EmptyState, Field, Modal, PageLoader, useToast } from '../../components/ui';
+import { Alert, Badge, Button, EmptyState, Field, Modal, PageLoader, useToast, ViewCredentialsModal } from '../../components/ui';
 import { Page, SearchInput, useLoad } from './common';
 
 export function TeacherForm({
@@ -69,55 +69,13 @@ export function TeacherForm({
   );
 }
 
-function AttendanceHistory({ teacher, onClose }: { teacher: TeacherListItem | null; onClose: () => void }) {
-  const { data } = useLoad(
-    () => (teacher ? directorApi.get<{ records: { id: string; date: string; checkInAt: string; checkOutAt: string | null; checkOutReason: string | null }[] }>(`/api/director/teachers/${teacher.id}/attendance?days=90`) : Promise.resolve(null)),
-    [teacher?.id],
-  );
-  const reason = (r: string | null) => (r === 'AUTO_END_OF_DAY' ? 'Авто (конец дня)' : r === 'ADMIN' ? 'Директор' : r === 'MANUAL' ? 'Сам' : '—');
-  return (
-    <Modal open={!!teacher} onClose={onClose} title={`Посещаемость: ${teacher?.lastName ?? ''} ${teacher?.firstName ?? ''}`} wide>
-      {!data ? (
-        <PageLoader />
-      ) : data.records.length === 0 ? (
-        <EmptyState icon={<CalendarClock />} title="Отметок за 90 дней нет" />
-      ) : (
-        <div className="thin-scroll max-h-[60vh] overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-white text-left text-xs uppercase text-slate-500 dark:bg-slate-900">
-              <tr>
-                <th className="py-2">Дата</th>
-                <th>Пришёл</th>
-                <th>Ушёл</th>
-                <th>Выход</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-              {data.records.map((r) => (
-                <tr key={r.id}>
-                  <td className="py-2 font-medium">{r.date.split('-').reverse().join('.')}</td>
-                  <td>{fmtTime(r.checkInAt)}</td>
-                  <td>{r.checkOutAt ? fmtTime(r.checkOutAt) : <Badge color="green">в школе</Badge>}</td>
-                  <td className="text-slate-500">{reason(r.checkOutReason)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
 export function TeachersPage() {
   const toast = useToast();
   const { data, reload } = useLoad(() => directorApi.get<TeacherListItem[]>('/api/director/teachers'));
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<'ACTIVE' | 'BLOCKED' | 'ARCHIVED' | 'ALL'>('ACTIVE');
   const [presence, setPresence] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [editing, setEditing] = useState<TeacherListItem | null>(null);
-  const [history, setHistory] = useState<TeacherListItem | null>(null);
-  const [creds, setCreds] = useState<{ login: string; password: string } | null>(null);
+  const [credsFor, setCredsFor] = useState<TeacherListItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TeacherListItem | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,11 +85,10 @@ export function TeachersPage() {
     const query = q.trim().toLowerCase();
     return (data ?? []).filter(
       (t) =>
-        (status === 'ALL' || t.status === status) &&
         (presence === 'ALL' || (presence === 'IN' ? t.present : !t.present)) &&
         (!query || `${t.lastName} ${t.firstName} ${t.login} ${t.positionTitle}`.toLowerCase().includes(query)),
     );
-  }, [data, q, status, presence]);
+  }, [data, q, presence]);
 
   const act = async (fn: () => Promise<unknown>, ok: string) => {
     try {
@@ -144,13 +101,12 @@ export function TeachersPage() {
   };
 
   if (!data) return <PageLoader />;
-  const counts = { ACTIVE: 0, BLOCKED: 0, ARCHIVED: 0 } as Record<string, number>;
-  for (const t of data) counts[t.status] = (counts[t.status] ?? 0) + 1;
+  const inSchool = data.filter((t) => t.present).length;
 
   return (
     <Page
       title="Учителя"
-      subtitle={`Всего: ${data.length} · активных: ${counts.ACTIVE}`}
+      subtitle={`Всего: ${data.length} · в школе: ${inSchool}`}
       actions={
         <Link to="/director/teachers/new">
           <Button icon={<UserPlus className="h-4 w-4" />}>Добавить учителя</Button>
@@ -159,13 +115,7 @@ export function TeachersPage() {
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <SearchInput value={q} onChange={setQ} placeholder="Поиск: ФИО, логин, предмет" />
-        <select className="input w-auto" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-          <option value="ACTIVE">Активные ({counts.ACTIVE})</option>
-          <option value="BLOCKED">Заблокированные ({counts.BLOCKED})</option>
-          <option value="ARCHIVED">Архив ({counts.ARCHIVED})</option>
-          <option value="ALL">Все</option>
-        </select>
-        <select className="input w-auto" value={presence} onChange={(e) => setPresence(e.target.value as typeof presence)}>
+        <select className="input sm:w-56" value={presence} onChange={(e) => setPresence(e.target.value as typeof presence)}>
           <option value="ALL">Присутствие: все</option>
           <option value="IN">В школе</option>
           <option value="OUT">Не в школе</option>
@@ -240,29 +190,8 @@ export function TeachersPage() {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex justify-end gap-1">
+                          <IconBtn title="Логин и пароль" onClick={() => setCredsFor(t)} icon={<Eye />} />
                           <IconBtn title="Редактировать" onClick={() => setEditing(t)} icon={<Pencil />} />
-                          <IconBtn title="Посещаемость" onClick={() => setHistory(t)} icon={<CalendarClock />} />
-                          <IconBtn
-                            title="Сбросить пароль"
-                            onClick={() =>
-                              void act(async () => {
-                                if (!confirm(`Сбросить пароль ${t.lastName} ${t.firstName}? Старый пароль перестанет работать.`)) throw new Error('Отменено');
-                                const r = await directorApi.post<{ credentials: { login: string; password: string } }>(`/api/director/teachers/${t.id}/reset-password`);
-                                setCreds(r.credentials);
-                              }, 'Пароль сброшен')
-                            }
-                            icon={<KeyRound />}
-                          />
-                          {t.status === 'ACTIVE' ? (
-                            <IconBtn title="Заблокировать" onClick={() => void act(() => directorApi.post(`/api/director/teachers/${t.id}/block`), 'Аккаунт заблокирован')} icon={<Ban />} />
-                          ) : t.status === 'BLOCKED' ? (
-                            <IconBtn title="Разблокировать" onClick={() => void act(() => directorApi.post(`/api/director/teachers/${t.id}/unblock`), 'Аккаунт разблокирован')} icon={<Unlock />} />
-                          ) : null}
-                          {t.status !== 'ARCHIVED' ? (
-                            <IconBtn title="В архив" onClick={() => void act(() => directorApi.post(`/api/director/teachers/${t.id}/archive`), 'Перемещён в архив')} icon={<Archive />} />
-                          ) : (
-                            <IconBtn title="Восстановить" onClick={() => void act(() => directorApi.post(`/api/director/teachers/${t.id}/restore`), 'Восстановлен')} icon={<ArchiveRestore />} />
-                          )}
                           <IconBtn title="Удалить" danger onClick={() => setConfirmDelete(t)} icon={<Trash2 />} />
                         </div>
                       </td>
@@ -322,8 +251,12 @@ export function TeachersPage() {
         </div>
       </Modal>
 
-      <AttendanceHistory teacher={history} onClose={() => setHistory(null)} />
-      <CredentialsModal creds={creds} title="Новый пароль" onClose={() => setCreds(null)} />
+      <ViewCredentialsModal
+        title={credsFor ? `${credsFor.lastName} ${credsFor.firstName}` : null}
+        load={() => directorApi.get<{ login: string; password: string | null }>(`/api/director/teachers/${credsFor!.id}/credentials`)}
+        regenerate={async () => (await directorApi.post<{ credentials: { login: string; password: string } }>(`/api/director/teachers/${credsFor!.id}/reset-password`)).credentials}
+        onClose={() => setCredsFor(null)}
+      />
     </Page>
   );
 }

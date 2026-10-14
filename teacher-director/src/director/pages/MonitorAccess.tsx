@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Ban, KeyRound, LogOut, Monitor, Plus, Trash2, Unlock } from 'lucide-react';
+import { Ban, Eye, LogOut, Monitor, Plus, Trash2, Unlock } from 'lucide-react';
 import { directorApi } from '../../lib/api';
 import { fmtDateTime } from '../../lib/types';
-import { Alert, Badge, Button, CredentialsModal, EmptyState, Field, Modal, PageLoader, useToast } from '../../components/ui';
+import { Alert, Badge, Button, CredentialsModal, EmptyState, Field, Modal, PageLoader, useToast, ViewCredentialsModal } from '../../components/ui';
 import { Page, useLoad } from './common';
 
 interface Account {
@@ -22,6 +22,7 @@ export function MonitorAccessPage() {
   const [label, setLabel] = useState('Ресепшен');
   const [creds, setCreds] = useState<{ login: string; password: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState<Account | null>(null);
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     try {
@@ -71,18 +72,8 @@ export function MonitorAccessPage() {
                 Последний вход: {fmtDateTime(a.lastLoginAt)} · активных сеансов: {a.activeSessions}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={<KeyRound className="h-4 w-4" />}
-                  onClick={() =>
-                    void run(async () => {
-                      const r = await directorApi.post<{ credentials: { login: string; password: string } }>(`/api/director/reception/${a.id}/reset-password`);
-                      setCreds(r.credentials);
-                    }, 'Пароль сброшен')
-                  }
-                >
-                  Сбросить пароль
+                <Button size="sm" icon={<Eye className="h-4 w-4" />} onClick={() => setViewing(a)}>
+                  Логин и пароль
                 </Button>
                 <Button size="sm" variant="secondary" icon={<LogOut className="h-4 w-4" />} onClick={() => void run(() => directorApi.post(`/api/director/reception/${a.id}/revoke-sessions`), 'Сеансы завершены')}>
                   Завершить сеансы
@@ -139,6 +130,16 @@ export function MonitorAccessPage() {
         </div>
       </Modal>
       <CredentialsModal creds={creds} title="Данные для входа в монитор" onClose={() => setCreds(null)} />
+      <ViewCredentialsModal
+        title={viewing ? `Монитор «${viewing.label}»` : null}
+        load={() => directorApi.get<{ login: string; password: string | null }>(`/api/director/reception/${viewing!.id}/credentials`)}
+        regenerate={async () => {
+          const r = await directorApi.post<{ credentials: { login: string; password: string } }>(`/api/director/reception/${viewing!.id}/reset-password`);
+          void reload();
+          return r.credentials;
+        }}
+        onClose={() => setViewing(null)}
+      />
     </Page>
   );
 }

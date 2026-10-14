@@ -162,7 +162,7 @@ export function CredentialsModal({ creds, title, onClose, note }: { creds: { log
     <Modal open={!!creds} onClose={onClose} title={title}>
       {creds && (
         <div className="space-y-4">
-          <Alert kind="warning">Пароль показывается только сейчас. Скопируйте и передайте его сотруднику лично. Позже его можно только сбросить.</Alert>
+          <Alert kind="warning">Передайте логин и пароль сотруднику лично. Посмотреть их снова можно кнопкой «Логин и пароль».</Alert>
           <CopyField label="Логин" value={creds.login} />
           <CopyField label="Пароль" value={creds.password} />
           <CopyField label="Логин и пароль одной строкой" value={`Логин: ${creds.login}\nПароль: ${creds.password}`} mono={false} />
@@ -170,6 +170,79 @@ export function CredentialsModal({ creds, title, onClose, note }: { creds: { log
           <Button className="w-full" onClick={onClose}>
             Готово
           </Button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/**
+ * Просмотр логина и пароля, выданных директором. Если пароль не сохранён (аккаунт создан раньше
+ * или сменился ключ шифрования) — можно выдать новый.
+ */
+export function ViewCredentialsModal({
+  title,
+  load,
+  regenerate,
+  onClose,
+}: {
+  title: string | null;
+  load: () => Promise<{ login: string; password: string | null }>;
+  regenerate: () => Promise<{ login: string; password: string }>;
+  onClose: () => void;
+}) {
+  const [data, setData] = useState<{ login: string; password: string | null } | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!title) return;
+    setData(null);
+    setError('');
+    load().then(setData, (e: Error) => setError(e.message));
+  }, [title]);
+  return (
+    <Modal open={!!title} onClose={onClose} title={title ?? ''}>
+      {error ? (
+        <Alert kind="error">{error}</Alert>
+      ) : !data ? (
+        <div className="flex justify-center py-6">
+          <Spinner />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <CopyField label="Логин" value={data.login} />
+          {data.password ? (
+            <>
+              <CopyField label="Пароль" value={data.password} />
+              <CopyField label="Логин и пароль одной строкой" value={`Логин: ${data.login}
+Пароль: ${data.password}`} mono={false} />
+            </>
+          ) : (
+            <Alert kind="info">Пароль этого аккаунта выдан раньше и не сохранён. Выдайте новый пароль — старый перестанет работать.</Alert>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              loading={busy}
+              onClick={async () => {
+                if (data.password && !confirm('Выдать новый пароль? Старый перестанет работать.')) return;
+                setBusy(true);
+                try {
+                  setData(await regenerate());
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Выдать новый пароль
+            </Button>
+            <Button className="flex-1" onClick={onClose}>
+              Готово
+            </Button>
+          </div>
         </div>
       )}
     </Modal>
