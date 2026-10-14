@@ -240,8 +240,11 @@ function outerSide(room: Room, b: { x1: number; y1: number; x2: number; y2: numb
   return null;
 }
 
-function Door({ room, info, gap = 6 }: { room: Room; info: DoorInfo; gap?: number }) {
-  const { len, along } = doorGeom(info);
+function Door({ room, info, gap = 6, center }: { room: Room; info: DoorInfo; gap?: number; center?: number }) {
+  const geom = doorGeom(info);
+  const len = center === undefined ? geom.len : 40;
+  // Наружные двери можно поставить в заданную точку стены (center), иначе — у конца общей стены
+  const along = center === undefined ? geom.along : center - len / 2;
   const cls = 'stroke-brand-400/80 dark:stroke-brand-300/70';
   if (info.side === 'bottom' || info.side === 'top') {
     const y = info.side === 'bottom' ? room.y + room.height : room.y;
@@ -402,12 +405,14 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
       break;
     }
     case 'CANTEEN': {
+      // Вдоль нижней стены — проход к входным дверям, столы его не занимают
+      const th = ih - 46;
       const cols = Math.max(2, Math.floor(iw / 90));
-      const rows = Math.max(1, Math.floor(ih / 80));
+      const rows = Math.max(1, Math.floor(th / 80));
       for (let r = 0; r < rows; r++)
         for (let c = 0; c < cols; c++) {
           const cx = ix + (c + 0.5) * (iw / cols);
-          const cy = iy + (r + 0.5) * (ih / rows);
+          const cy = iy + (r + 0.5) * (th / rows);
           const rr = Math.min(16, iw / cols / 4);
           els.push(<circle key={`t${r}${c}`} cx={cx} cy={cy} r={rr} className="fill-orange-200/70 stroke-orange-300 dark:fill-orange-900/40 dark:stroke-orange-700/60" strokeWidth={1} />);
           for (let a = 0; a < 4; a++) {
@@ -526,6 +531,7 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
   const ordered = [...rooms].sort((a, b) => Number(b.type === 'CORRIDOR') - Number(a.type === 'CORRIDOR'));
   const chains = stairChains(rooms);
   const chained = new Set(chains.flat().map((r) => r.id));
+  const canteenFloor = rooms.some((r) => r.type === 'CANTEEN');
   const doors = new Map(
     rooms
       .filter((r) => r.type !== 'CORRIDOR' && r.type !== 'ELEVATOR' && r.type !== 'STAIRS')
@@ -573,16 +579,23 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
       })}
       {/* Наружные стены и окна */}
       <rect x={bounds.x1} y={bounds.y1} width={bounds.x2 - bounds.x1} height={bounds.y2 - bounds.y1} fill="none" className={OUTER} strokeWidth={7} rx={2} />
-      {/* Входная дверь здания */}
-      {rooms.filter(isEntrance).map((r) => {
-        const info = outerSide(r, bounds);
-        return info ? <Door key={`in${r.id}`} room={r} info={info} gap={10} /> : null;
-      })}
       {ordered
         .filter((r) => r.type !== 'STAIRS' && r.type !== 'ELEVATOR' && r.type !== 'CORRIDOR')
         .map((r) => (
           <Windows key={`win${r.id}`} room={r} bounds={bounds} />
         ))}
+      {/* Входные двери здания (поверх окон) */}
+      {canteenFloor
+        ? // Столовая: три двери в нижней наружной стене — слева, посередине и справа
+          [0.12, 0.5, 0.88].map((k) => {
+            const cx = bounds.x1 + (bounds.x2 - bounds.x1) * k;
+            const r = rooms.find((x) => near(x.y + x.height, bounds.y2) && x.x + 26 <= cx && cx <= x.x + x.width - 26);
+            return r ? <Door key={`ex${k}`} room={r} info={{ side: 'bottom', from: r.x, to: r.x + r.width }} gap={10} center={cx} /> : null;
+          })
+        : rooms.filter(isEntrance).map((r) => {
+            const info = outerSide(r, bounds);
+            return info ? <Door key={`in${r.id}`} room={r} info={info} gap={10} /> : null;
+          })}
     </svg>
   );
 });
