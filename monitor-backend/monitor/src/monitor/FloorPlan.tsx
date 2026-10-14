@@ -36,7 +36,7 @@ const near = (a: number, b: number, tol = 6) => Math.abs(a - b) <= tol;
 type Side = 'top' | 'bottom' | 'left' | 'right';
 
 /** Сторона, которой помещение примыкает к коридору, и участок общей стены. */
-function doorSide(room: Room, corridors: Room[]): { side: Side; from: number; to: number } | null {
+function doorSide(room: Room, corridors: Room[]): DoorInfo | null {
   for (const c of corridors) {
     const ox1 = Math.max(room.x, c.x), ox2 = Math.min(room.x + room.width, c.x + c.width);
     const oy1 = Math.max(room.y, c.y), oy2 = Math.min(room.y + room.height, c.y + c.height);
@@ -52,9 +52,202 @@ function doorSide(room: Room, corridors: Room[]): { side: Side; from: number; to
   return null;
 }
 
-function Door({ room, info }: { room: Room; info: { side: Side; from: number; to: number } }) {
+type DoorInfo = { side: Side; from: number; to: number };
+
+/** Общая стена двух помещений: сторона помещения a и участок вдоль неё. */
+function sharedEdge(a: Room, b: Room): DoorInfo | null {
+  const ox1 = Math.max(a.x, b.x), ox2 = Math.min(a.x + a.width, b.x + b.width);
+  const oy1 = Math.max(a.y, b.y), oy2 = Math.min(a.y + a.height, b.y + b.height);
+  if (ox2 - ox1 > 10) {
+    if (near(a.y + a.height, b.y, 3)) return { side: 'bottom', from: ox1, to: ox2 };
+    if (near(a.y, b.y + b.height, 3)) return { side: 'top', from: ox1, to: ox2 };
+  }
+  if (oy2 - oy1 > 10) {
+    if (near(a.x + a.width, b.x, 3)) return { side: 'right', from: oy1, to: oy2 };
+    if (near(a.x, b.x + b.width, 3)) return { side: 'left', from: oy1, to: oy2 };
+  }
+  return null;
+}
+
+/** Размер двери и её положение вдоль стены */
+function doorGeom(info: DoorInfo) {
   const len = Math.min(46, Math.max(22, (info.to - info.from) * 0.22));
   const along = info.to - len - Math.min(26, (info.to - info.from) * 0.12);
+  return { len, along };
+}
+
+/**
+ * Соседние лестничные пролёты (например, U-образная лестница вокруг лифта) — одна лестница:
+ * цепочка помещений от одного конца к другому. Одиночные лестницы в группы не входят.
+ */
+export function stairChains(rooms: Room[]): Room[][] {
+  const stairs = rooms.filter((r) => r.type === 'STAIRS');
+  const adj = new Map(stairs.map((s) => [s.id, stairs.filter((o) => o.id !== s.id && sharedEdge(s, o))]));
+  const seen = new Set<string>();
+  const chains: Room[][] = [];
+  for (const s of stairs) {
+    if (seen.has(s.id)) continue;
+    const comp: Room[] = [];
+    const stack = [s];
+    while (stack.length) {
+      const c = stack.pop()!;
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      comp.push(c);
+      stack.push(...adj.get(c.id)!);
+    }
+    if (comp.length < 2 || comp.some((c) => adj.get(c.id)!.length > 2)) continue;
+    const ends = comp.filter((c) => adj.get(c.id)!.length === 1).sort((a, b) => a.x - b.x || a.y - b.y);
+    if (!ends.length) continue;
+    const chain = [ends[0]!];
+    while (chain.length < comp.length) {
+      const next = adj.get(chain[chain.length - 1]!.id)!.find((o) => !chain.includes(o));
+      if (!next) break;
+      chain.push(next);
+    }
+    if (chain.length === comp.length) chains.push(chain);
+  }
+  return chains;
+}
+
+/** Лестницы, у которых подпись не нужна: вторые и следующие пролёты одной лестницы */
+export function hiddenStairLabels(rooms: Room[]): Set<string> {
+  return new Set(stairChains(rooms).flatMap((c) => c.slice(1).map((r) => r.id)));
+}
+
+type Pt = { x: number; y: number };
+
+type Box = { x1: number; y1: number; x2: number; y2: number };
+
+/**
+ * Составная лестница (например, U-образная вокруг лифта): прямые марши со ступенями поперёк хода,
+ * а на поворотах — плавный веер забежных ступеней из внутреннего угла.
+ */
+function StairChain({ chain }: { chain: Room[] }) {
+  const STEP = 13;
+  const edges = chain.slice(0, -1).map((r, i) => sharedEdge(r, chain[i + 1]!)!);
+  const axis = chain.map((r, i): 'h' | 'v' => {
+    if (i > 0 && i < chain.length - 1) return edges[i - 1]!.side === 'left' || edges[i - 1]!.side === 'right' ? 'h' : 'v';
+    return r.height >= r.width ? 'v' : 'h';
+  });
+  // Повороты: участок пролёта, где марш меняет направление, и внутренний угол веера
+  const turns: { room: number; q: Box; pivot: Pt }[] = [];
+  edges.forEach((e, i) => {
+    if (axis[i] === axis[i + 1]) return;
+    // Поворот лежит в том пролёте, к боковой стене которого примыкает соседний
+    const sideAxis = e.side === 'left' || e.side === 'right' ? 'v' : 'h';
+    const host = axis[i] === sideAxis ? i : i + 1;
+    const r = chain[host]!;
+    const other = chain[host === i ? i + 1 : i]!;
+    if (sideAxis === 'v') {
+      const q = { x1: r.x, x2: r.x + r.width, y1: Math.max(r.y, other.y), y2: Math.min(r.y + r.height, other.y + other.height) };
+      const px = other.x >= r.x + r.width - 3 ? r.x + r.width : r.x;
+      const py = near(q.y1, r.y, 3) ? q.y2 : q.y1;
+      turns.push({ room: host, q, pivot: { x: px, y: py } });
+    } else {
+      const q = { y1: r.y, y2: r.y + r.height, x1: Math.max(r.x, other.x), x2: Math.min(r.x + r.width, other.x + other.width) };
+      const py = other.y >= r.y + r.height - 3 ? r.y + r.height : r.y;
+      const px = near(q.x1, r.x, 3) ? q.x2 : q.x1;
+      turns.push({ room: host, q, pivot: { x: px, y: py } });
+    }
+  });
+
+  const els: ReactNode[] = [];
+  chain.forEach((r, i) => {
+    const vertical = axis[i] === 'v';
+    const lo = vertical ? r.y : r.x, hi = vertical ? r.y + r.height : r.x + r.width;
+    // Прямые участки марша = пролёт без зон поворота
+    let free: [number, number][] = [[lo, hi]];
+    for (const t of turns.filter((t) => t.room === i)) {
+      const a = vertical ? t.q.y1 : t.q.x1, b = vertical ? t.q.y2 : t.q.x2;
+      free = free.flatMap(([f, to]): [number, number][] => {
+        const parts: [number, number][] = [[f, Math.min(to, a)], [Math.max(f, b), to]];
+        return parts.filter(([u, v]) => v - u > 2);
+      });
+    }
+    for (const [f, to] of free) {
+      const n = Math.max(1, Math.round((to - f) / STEP));
+      for (let k = 0; k <= n; k++) {
+        const s = f + ((to - f) * k) / n;
+        if (s <= lo + 2 || s >= hi - 2) continue; // по стенам ступени не рисуются
+        els.push(
+          vertical ? (
+            <line key={`s${i}-${s}`} x1={r.x + 3} y1={s} x2={r.x + r.width - 3} y2={s} className={LINE} strokeWidth={1.2} />
+          ) : (
+            <line key={`s${i}-${s}`} x1={s} y1={r.y + 3} x2={s} y2={r.y + r.height - 3} className={LINE} strokeWidth={1.2} />
+          ),
+        );
+      }
+    }
+  });
+  // Веер забежных ступеней
+  turns.forEach(({ q, pivot }, ti) => {
+    const fx = near(pivot.x, q.x1, 1) ? q.x2 : q.x1, fy = near(pivot.y, q.y1, 1) ? q.y2 : q.y1;
+    const a0 = Math.atan2(0, fx - pivot.x), a1 = Math.atan2(fy - pivot.y, 0);
+    let da = a1 - a0;
+    if (da > Math.PI) da -= 2 * Math.PI;
+    if (da < -Math.PI) da += 2 * Math.PI;
+    const qw = q.x2 - q.x1, qh = q.y2 - q.y1;
+    const n = Math.max(3, Math.round(((Math.PI / 2) * Math.max(qw, qh)) / (STEP * 2.2)));
+    for (let k = 1; k < n; k++) {
+      const ang = a0 + (da * k) / n;
+      const c = Math.cos(ang), s = Math.sin(ang);
+      const t = Math.min(Math.abs(c) > 1e-6 ? qw / Math.abs(c) : Infinity, Math.abs(s) > 1e-6 ? qh / Math.abs(s) : Infinity) - 2;
+      els.push(<line key={`w${ti}-${k}`} x1={pivot.x} y1={pivot.y} x2={pivot.x + c * t} y2={pivot.y + s * t} className={LINE} strokeWidth={1.2} />);
+    }
+    // Границы поворота с прямыми маршами — тоже ступени
+    els.push(<line key={`wa${ti}`} x1={pivot.x} y1={pivot.y} x2={fx} y2={pivot.y} className={LINE} strokeWidth={1.2} />);
+    els.push(<line key={`wb${ti}`} x1={pivot.x} y1={pivot.y} x2={pivot.x} y2={fy} className={LINE} strokeWidth={1.2} />);
+  });
+  // Стены только снаружи лестницы: общие участки между пролётами не рисуются
+  const walls: ReactNode[] = [];
+  for (const r of chain) {
+    const sides: { side: Side; a: Pt; b: Pt }[] = [
+      { side: 'top', a: { x: r.x, y: r.y }, b: { x: r.x + r.width, y: r.y } },
+      { side: 'bottom', a: { x: r.x, y: r.y + r.height }, b: { x: r.x + r.width, y: r.y + r.height } },
+      { side: 'left', a: { x: r.x, y: r.y }, b: { x: r.x, y: r.y + r.height } },
+      { side: 'right', a: { x: r.x + r.width, y: r.y }, b: { x: r.x + r.width, y: r.y + r.height } },
+    ];
+    for (const s of sides) {
+      const horizontal = s.side === 'top' || s.side === 'bottom';
+      let segs: [number, number][] = [horizontal ? [s.a.x, s.b.x] : [s.a.y, s.b.y]];
+      for (const o of chain) {
+        if (o.id === r.id) continue;
+        const e = sharedEdge(r, o);
+        if (!e || e.side !== s.side) continue;
+        segs = segs.flatMap(([f, t]): [number, number][] => {
+          const parts: [number, number][] = [[f, Math.min(t, e.from)], [Math.max(f, e.to), t]];
+          return parts.filter(([u, v]) => v - u > 1);
+        });
+      }
+      segs.forEach(([f, t], k) =>
+        walls.push(
+          horizontal ? (
+            <line key={`${r.id}${s.side}${k}`} x1={f} y1={s.a.y} x2={t} y2={s.a.y} className={WALL} strokeWidth={3} strokeLinecap="square" />
+          ) : (
+            <line key={`${r.id}${s.side}${k}`} x1={s.a.x} y1={f} x2={s.a.x} y2={t} className={WALL} strokeWidth={3} strokeLinecap="square" />
+          ),
+        ),
+      );
+    }
+  }
+  return (
+    <g>
+      {els}
+      {walls}
+    </g>
+  );
+}
+
+/** Стена для доски в классе: смежная с соседним кабинетом, поперёк стены с дверью. */
+function boardSide(room: Room, door: DoorInfo | null, rooms: Room[]): Side {
+  const perp: Side[] = !door ? ['left', 'right', 'top', 'bottom'] : door.side === 'top' || door.side === 'bottom' ? ['left', 'right'] : ['top', 'bottom'];
+  const neighbour = (s: Side) => rooms.some((o) => o.id !== room.id && o.type !== 'CORRIDOR' && sharedEdge(room, o)?.side === s);
+  return perp.find(neighbour) ?? (door ? perp[0]! : 'top');
+}
+
+function Door({ room, info }: { room: Room; info: DoorInfo }) {
+  const { len, along } = doorGeom(info);
   const cls = 'stroke-brand-400/80 dark:stroke-brand-300/70';
   if (info.side === 'bottom' || info.side === 'top') {
     const y = info.side === 'bottom' ? room.y + room.height : room.y;
@@ -106,11 +299,20 @@ function Windows({ room, bounds }: { room: Room; bounds: { x1: number; y1: numbe
 }
 
 /** Мебель и обозначения внутри помещения */
-function Furniture({ room }: { room: Room }) {
+function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; board: Side }) {
   const { x, y, width: w, height: h } = room;
   const pad = 14;
   const top = y + 34; // место для подписи
-  const ix = x + pad, iw = w - pad * 2, iy = top, ih = y + h - pad - top;
+  let x1 = x + pad, y1 = top, x2 = x + w - pad, y2 = y + h - pad;
+  // Полоса у двери свободна: мебель не попадает под створку
+  if (door && room.type !== 'GYM' && room.type !== 'STADIUM') {
+    const clear = doorGeom(door).len + 8;
+    if (door.side === 'top') y1 = Math.max(y1, y + clear);
+    if (door.side === 'bottom') y2 = Math.min(y2, y + h - clear);
+    if (door.side === 'left') x1 = Math.max(x1, x + clear);
+    if (door.side === 'right') x2 = Math.min(x2, x + w - clear);
+  }
+  const ix = x1, iw = x2 - x1, iy = y1, ih = y2 - y1;
   // Лестница и лифт рисуются на всю площадь (подпись поверх), остальное — ниже подписи
   if ((iw < 30 || ih < 20) && room.type !== 'STAIRS' && room.type !== 'ELEVATOR') return null;
   const els: ReactNode[] = [];
@@ -118,25 +320,41 @@ function Furniture({ room }: { room: Room }) {
   switch (room.type) {
     case 'CLASSROOM':
     case 'LAB': {
-      // Доска у стены и стол учителя
-      els.push(<rect key="board" x={x + w * 0.3} y={y + 5} width={w * 0.4} height={5} rx={2} className="fill-emerald-600/70 dark:fill-emerald-500/50" />);
-      const deskW = Math.min(46, iw / 5);
-      els.push(<rect key="tdesk" x={x + w - pad - deskW} y={iy} width={deskW} height={14} rx={3} className={FURN} strokeWidth={1} />);
-      const cols = Math.max(2, Math.min(5, Math.floor(iw / 62)));
-      const rows = Math.max(1, Math.min(4, Math.floor((ih - 24) / 30)));
-      const cw = iw / cols;
-      const rh = (ih - 24) / rows;
+      // Доска на стене у соседнего кабинета; парты и стулья смотрят на неё.
+      // Локальные координаты: u — вдоль доски, v — вглубь класса от доски.
+      const alongX = board === 'top' || board === 'bottom';
+      const U = alongX ? iw : ih, V = alongX ? ih : iw;
+      const at = (u: number, v: number, du: number, dv: number) => {
+        if (board === 'top') return { x: ix + u, y: iy + v, width: du, height: dv };
+        if (board === 'bottom') return { x: ix + u, y: iy + ih - v - dv, width: du, height: dv };
+        if (board === 'left') return { x: ix + v, y: iy + u, width: dv, height: du };
+        return { x: ix + iw - v - dv, y: iy + u, width: dv, height: du };
+      };
+      const boardRect =
+        board === 'top' ? { x: x + w * 0.3, y: y + 5, width: w * 0.4, height: 5 }
+        : board === 'bottom' ? { x: x + w * 0.3, y: y + h - 10, width: w * 0.4, height: 5 }
+        : board === 'left' ? { x: x + 5, y: y + h * 0.3, width: 5, height: h * 0.4 }
+        : { x: x + w - 10, y: y + h * 0.3, width: 5, height: h * 0.4 };
+      els.push(<rect key="board" {...boardRect} rx={2} className="fill-emerald-600/70 dark:fill-emerald-500/50" />);
+      const front = 24;
+      const deskW = Math.min(46, U / 5);
+      els.push(<rect key="tdesk" {...at(U - deskW, 0, deskW, 14)} rx={3} className={FURN} strokeWidth={1} />);
+      const cols = Math.max(2, Math.min(5, Math.floor(U / 62)));
+      const rows = Math.max(1, Math.min(4, Math.floor((V - front) / 30)));
+      const cw = U / cols;
+      const rh = (V - front) / rows;
+      const dv = Math.min(14, rh * 0.42);
       for (let r = 0; r < rows; r++)
         for (let c = 0; c < cols; c++) {
-          const dx = ix + c * cw + cw * 0.14;
-          const dy = iy + 24 + r * rh + rh * 0.18;
-          els.push(<rect key={`d${r}${c}`} x={dx} y={dy} width={cw * 0.72} height={Math.min(14, rh * 0.42)} rx={2.5} className={FURN} strokeWidth={1} />);
-          els.push(<circle key={`c${r}${c}`} cx={dx + cw * 0.36} cy={dy + Math.min(14, rh * 0.42) + 5} r={3.2} className="fill-slate-300 dark:fill-slate-600/70" />);
+          const u = c * cw + cw * 0.14, v = front + r * rh + rh * 0.18;
+          els.push(<rect key={`d${r}${c}`} {...at(u, v, cw * 0.72, dv)} rx={2.5} className={FURN} strokeWidth={1} />);
+          const seat = at(u + cw * 0.36, v + dv + 5, 0, 0);
+          els.push(<circle key={`c${r}${c}`} cx={seat.x} cy={seat.y} r={3.2} className="fill-slate-300 dark:fill-slate-600/70" />);
         }
       if (room.type === 'LAB') {
-        const cx = x + w - pad - 20, cy = y + h - pad - 20;
-        els.push(<circle key="gear" cx={cx} cy={cy} r={12} fill="none" className="stroke-cyan-500/70" strokeWidth={4} strokeDasharray="4 3" />);
-        els.push(<circle key="gear2" cx={cx} cy={cy} r={4} className="fill-cyan-500/70" />);
+        const g = at(14, 12, 0, 0);
+        els.push(<circle key="gear" cx={g.x} cy={g.y} r={10} fill="none" className="stroke-cyan-500/70" strokeWidth={4} strokeDasharray="4 3" />);
+        els.push(<circle key="gear2" cx={g.x} cy={g.y} r={3.5} className="fill-cyan-500/70" />);
       }
       break;
     }
@@ -226,7 +444,7 @@ function Furniture({ room }: { room: Room }) {
       break;
     }
     case 'STAIRS': {
-      // Ступени поперёк длинной стороны + стрелка подъёма
+      // Ступени поперёк длинной стороны (без стрелки)
       const vertical = h >= w;
       const n = Math.max(5, Math.floor((vertical ? h : w) / 14));
       for (let i = 1; i < n; i++) {
@@ -239,14 +457,6 @@ function Furniture({ room }: { room: Room }) {
           ),
         );
       }
-      const ax = x + w / 2, ay = y + h / 2;
-      els.push(
-        vertical ? (
-          <path key="ar" d={`M ${ax} ${y + h - 12} L ${ax} ${y + 14} M ${ax - 6} ${y + 22} L ${ax} ${y + 14} L ${ax + 6} ${y + 22}`} fill="none" className="stroke-brand-400/80" strokeWidth={2} />
-        ) : (
-          <path key="ar" d={`M ${x + 12} ${ay} L ${x + w - 14} ${ay} M ${x + w - 22} ${ay - 6} L ${x + w - 14} ${ay} L ${x + w - 22} ${ay + 6}`} fill="none" className="stroke-brand-400/80" strokeWidth={2} />
-        ),
-      );
       break;
     }
     case 'ELEVATOR': {
@@ -296,6 +506,13 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
     : { x1: 0, y1: 0, x2: floor.width, y2: floor.height };
   // Порядок: коридоры снизу, затем помещения
   const ordered = [...rooms].sort((a, b) => Number(b.type === 'CORRIDOR') - Number(a.type === 'CORRIDOR'));
+  const chains = stairChains(rooms);
+  const chained = new Set(chains.flat().map((r) => r.id));
+  const doors = new Map(
+    rooms
+      .filter((r) => r.type !== 'CORRIDOR' && r.type !== 'ELEVATOR' && r.type !== 'STAIRS')
+      .map((r) => [r.id, doorSide(r, corridors)] as const),
+  );
 
   return (
     <svg viewBox={`0 0 ${floor.width} ${floor.height}`} width={width} height={height} className="absolute left-0 top-0 overflow-visible" aria-hidden>
@@ -319,22 +536,23 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
             <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={`url(#wood-${floor.id})`} />
           )}
           {occupied.has(r.id) && <rect x={r.x} y={r.y} width={r.width} height={r.height} className="fill-brand-400/10 dark:fill-brand-400/10" />}
-          <Furniture room={r} />
+          {!chained.has(r.id) && <Furniture room={r} door={doors.get(r.id) ?? null} board={r.type === 'CLASSROOM' || r.type === 'LAB' ? boardSide(r, doors.get(r.id) ?? null, rooms) : 'top'} />}
         </g>
       ))}
-      {/* Стены */}
+      {/* Стены (у составной лестницы — только наружные, вместе со ступенями) */}
       {ordered
-        .filter((r) => r.type !== 'CORRIDOR')
+        .filter((r) => r.type !== 'CORRIDOR' && !chained.has(r.id))
         .map((r) => (
           <rect key={`w${r.id}`} x={r.x} y={r.y} width={r.width} height={r.height} fill="none" className={WALL} strokeWidth={3} />
         ))}
+      {chains.map((c) => (
+        <StairChain key={`st${c[0]!.id}`} chain={c} />
+      ))}
       {/* Двери в коридор (у лестниц и лифта дверей нет) */}
-      {ordered
-        .filter((r) => r.type !== 'CORRIDOR' && r.type !== 'ELEVATOR' && r.type !== 'STAIRS')
-        .map((r) => {
-          const info = doorSide(r, corridors);
-          return info ? <Door key={`d${r.id}`} room={r} info={info} /> : null;
-        })}
+      {[...doors].map(([id, info]) => {
+        const r = rooms.find((x) => x.id === id)!;
+        return info ? <Door key={`d${id}`} room={r} info={info} /> : null;
+      })}
       {/* Наружные стены и окна */}
       <rect x={bounds.x1} y={bounds.y1} width={bounds.x2 - bounds.x1} height={bounds.y2 - bounds.y1} fill="none" className={OUTER} strokeWidth={7} rx={2} />
       {ordered

@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Building, Room, SnapshotTeacher as Teacher } from '../lib/types';
 import { Avatar } from '../components/Avatar';
-import { FloorPlan } from './FloorPlan';
+import { FloorPlan, hiddenStairLabels } from './FloorPlan';
 
 const FLOOR_HEADER = 44;
 const FLOOR_GAP = 28;
@@ -159,6 +159,8 @@ export function BuildingMap({
     if (p) scrollRef.current.scrollTo({ top: Math.max(0, p.y - scrollRef.current.clientHeight / 2), behavior: 'smooth' });
   }, [focusTeacherId, placed, scrollRef]);
 
+  const hiddenLabels = useMemo(() => new Set(building.floors.flatMap((f) => [...hiddenStairLabels(f.rooms)])), [building]);
+
   return (
     <div ref={boxRef} className={`relative w-full ${isCanteen ? 'canteen' : ''}`} style={{ height: geometry.total }}>
       {geometry.floorBoxes.map(({ floor, top, height, left, width: w, planLeft, planTop, planW, planH }) => (
@@ -178,7 +180,7 @@ export function BuildingMap({
         </div>
       ))}
 
-      {[...geometry.rooms.values()].map(({ room, x, y, w, h }) => {
+      {[...geometry.rooms.values()].filter(({ room }) => !hiddenLabels.has(room.id)).map(({ room, x, y, w, h }) => {
         const occupants = byRoom.get(room.id)?.length ?? 0;
         const passive = room.type === 'CORRIDOR' || room.type === 'STAIRS' || room.type === 'ELEVATOR';
         return (
