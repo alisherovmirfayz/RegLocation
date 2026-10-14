@@ -39,6 +39,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
   const [cells, setCells] = useState<Map<string, Cell>>(new Map());
   const [original, setOriginal] = useState<Map<string, Cell>>(new Map());
   const [day, setDay] = useState(1);
+  const todayDow = ((new Date().getDay() + 6) % 7) + 1;
   const [busy, setBusy] = useState<'ocr' | 'save' | null>(null);
   const [ocr, setOcr] = useState<{ result: RecognitionResult; sourceFileId: string } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -279,22 +280,28 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
       )}
 
       {/* Дни недели */}
-      <div className="thin-scroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {days.map((d) => (
-          <button
-            key={d}
-            onClick={() => setDay(d)}
-            className={`relative shrink-0 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${day === d ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300'}`}
-          >
-            {day === d && <motion.span layoutId="day-pill" className="absolute inset-0 rounded-2xl bg-brand-600 shadow-lg shadow-brand-600/25" />}
-            <span className="relative flex items-center gap-1.5">
-              <span className="sm:hidden">{DAY_SHORT[d]}</span>
-              <span className="hidden sm:inline">{DAY_NAMES[d]}</span>
-              <span className={`rounded-full px-1.5 text-[11px] ${day === d ? 'bg-white/25' : 'bg-slate-100 dark:bg-white/10'}`}>{countByDay(d)}</span>
-              {reviewByDay(d) > 0 && <span className="h-2 w-2 rounded-full bg-amber-400" />}
-            </span>
-          </button>
-        ))}
+      {/* Все дни в одну строку без прокрутки; сегодняшний отмечен */}
+      <div className="grid gap-1.5 sm:gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+        {days.map((d) => {
+          const isToday = d === todayDow;
+          return (
+            <button
+              key={d}
+              onClick={() => setDay(d)}
+              title={DAY_NAMES[d]}
+              className={`relative min-w-0 rounded-xl px-1 py-1.5 text-sm font-semibold transition sm:rounded-2xl sm:py-2.5 ${day === d ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300'} ${isToday && day !== d ? 'ring-2 ring-emerald-400/70' : ''}`}
+            >
+              {day === d && <motion.span layoutId="day-pill" className="absolute inset-0 rounded-xl bg-brand-600 shadow-lg shadow-brand-600/25 sm:rounded-2xl" />}
+              <span className="relative flex flex-col items-center leading-tight sm:flex-row sm:justify-center sm:gap-1.5">
+                <span className="lg:hidden">{DAY_SHORT[d]}</span>
+                <span className="hidden lg:inline">{DAY_NAMES[d]}</span>
+                <span className={`text-[10px] font-medium sm:rounded-full sm:px-1.5 sm:text-[11px] ${day === d ? 'text-white/80 sm:bg-white/25' : 'text-slate-400 sm:bg-slate-100 dark:sm:bg-white/10'}`}>{countByDay(d)}</span>
+                {reviewByDay(d) > 0 && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400 sm:static" />}
+              </span>
+              {isToday && <span className={`relative block truncate text-[9px] font-bold lowercase sm:text-[10px] ${day === d ? 'text-white/90' : 'text-emerald-500'}`}>Сегодня</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Уроки выбранного дня */}

@@ -223,6 +223,7 @@ const UZ: Record<string, string> = {
   'Пятница': 'Juma',
   'Суббота': 'Shanba',
   'Воскресенье': 'Yakshanba',
+  'Сегодня': 'Bugun',
   'Пн': 'Du',
   'Вт': 'Se',
   'Ср': 'Cho',
