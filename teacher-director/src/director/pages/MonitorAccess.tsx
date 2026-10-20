@@ -69,7 +69,7 @@ export function MonitorAccessPage() {
                 {a.status === 'ACTIVE' ? <Badge color="green">Активен</Badge> : <Badge color="red">Заблокирован</Badge>}
               </div>
               <div className="mt-3 text-xs text-slate-500">
-                Последний вход: {fmtDateTime(a.lastLoginAt)} · активных сеансов: {a.activeSessions}
+                {`Последний вход: ${fmtDateTime(a.lastLoginAt)} · активных сеансов: ${a.activeSessions}`}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" icon={<Eye className="h-4 w-4" />} onClick={() => setViewing(a)}>

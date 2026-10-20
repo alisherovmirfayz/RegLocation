@@ -251,6 +251,8 @@ const UZ: Record<string, string> = {
   'Стадион': 'Stadion',
   'Трибуна': 'Tribuna',
   'Раздевалка': 'Yechinish xonasi',
+  'Вход / выход': 'Kirish / chiqish',
+  'Войти в монитор': 'Monitorga kirish',
   'Вход': 'Kirish',
   'Спортзал': 'Sport zali',
   'Учебный кабинет': 'O‘quv xonasi',
@@ -637,6 +639,9 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^Добавить помещение на «(.+)»$/, (m) => `«${lookup(m[1]!) ?? m[1]}» ga xona qo‘shish`],
   [/^Размер этажа: (\d+) × (\d+)$/, (m) => `Qavat o‘lchami: ${m[1]} × ${m[2]}`],
   [/^помещений: (\d+)$/, (m) => `xonalar: ${m[1]}`],
+  [/^(\d+) помещений$/, (m) => `${m[1]} ta xona`],
+  [/^в расписаниях: (\d+)$/, (m) => `jadvallarda: ${m[1]}`],
+  [/^Раздевалка (\d+)$/, (m) => `Yechinish xonasi ${m[1]}`],
   // «Отошёл → в кабинет»: «Кабинет 205 до 14:30»; общий случай — последним
   [/^Кабинет (\S+) до (\d\d:\d\d)$/, (m) => `${m[1]}-xona, ${m[2]} gacha`],
   [/^(.+) до (\d\d:\d\d)$/, (m) => `${m[1]}, ${m[2]} gacha`],

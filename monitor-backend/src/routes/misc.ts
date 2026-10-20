@@ -90,7 +90,8 @@ export function publicRouter(ctx: AppContext): Router {
     ah(async (_req, res) => {
       const id = await ctx.settings.logoFileId();
       const f = id ? await ctx.storage.read(id) : null;
-      if (!f) throw notFound('Логотип не загружен');
+      // Свой логотип не загружен — стандартный из сборки (без ошибки 404 в консоли браузера)
+      if (!f) return void res.set('Cache-Control', 'public, max-age=60').redirect(302, '/brand/logo.jpg');
       res.set({ 'Content-Type': f.file.mimeType, 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' }).send(f.data);
     }),
   );

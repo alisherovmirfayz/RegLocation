@@ -395,7 +395,7 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
           {data.timetable?.confirmedAt && !dirty && (
             <span className="hidden text-xs text-slate-500 sm:inline">
               <Sparkles className="mr-1 inline h-3 w-3" />
-              Действует с {new Date(data.timetable.confirmedAt).toLocaleDateString('ru-RU')}
+              {`Действует с ${new Date(data.timetable.confirmedAt).toLocaleDateString('ru-RU')}`}
             </span>
           )}
         </div>

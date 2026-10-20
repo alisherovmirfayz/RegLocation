@@ -288,7 +288,7 @@ export function SchoolEditorPage() {
             <div className="card space-y-3 p-5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Помещение</span>
-                {sel.timetableUses ? <Badge color="blue">в расписаниях: {sel.timetableUses}</Badge> : null}
+                {sel.timetableUses ? <Badge color="blue">{`в расписаниях: ${sel.timetableUses}`}</Badge> : null}
               </div>
               <Field label="Название">
                 <input className="input" value={sel.name} onChange={(e) => update(sel.id, { name: e.target.value })} />

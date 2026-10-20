@@ -352,7 +352,8 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
       const tdeskU = underDoor(at(U - deskW, 0, deskW, 14)) ? 0 : U - deskW;
       els.push(<rect key="tdesk" {...at(tdeskU, 0, deskW, 14)} rx={3} className={FURN} strokeWidth={1} />);
       const cols = Math.max(2, Math.min(8, Math.floor(U / 38)));
-      const rows = Math.max(1, Math.min(8, Math.floor((V - front) / 30)));
+      // Неглубокий класс: места под парты нет — только доска и стол учителя
+      const rows = V - front < 20 ? 0 : Math.max(1, Math.min(8, Math.floor((V - front) / 30)));
       const cw = U / cols;
       const rh = (V - front) / rows;
       const dv = Math.min(12, rh * 0.4);

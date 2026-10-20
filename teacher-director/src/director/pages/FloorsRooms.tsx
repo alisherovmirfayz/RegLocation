@@ -86,7 +86,7 @@ export function FloorsRoomsPage() {
                 ) : (
                   <>
                     <span className="font-semibold">{f.name}</span>
-                    <Badge>{f.rooms.length} помещений</Badge>
+                    <Badge>{`${f.rooms.length} помещений`}</Badge>
                     <button onClick={() => setRename({ id: f.id, name: f.name, level: f.level })} className="rounded-lg p-1.5 text-slate-400 hover:text-brand-600" title="Переименовать">
                       <Pencil className="h-4 w-4" />
                     </button>
