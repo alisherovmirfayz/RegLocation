@@ -5,6 +5,9 @@ import QRCode from 'qrcode';
 import { api } from '../lib/api';
 import type { Snapshot } from '../lib/types';
 
+const SHOW_EVERY_MIN = 2;
+const SHOW_FOR_SEC = 10;
+
 const toMin = (hm: string) => {
   const [h, m] = hm.split(':').map(Number);
   return h! * 60 + m!;
@@ -22,10 +25,10 @@ function useTeacherUrl() {
 }
 
 /**
- * Утром, от начала учебного дня (08:00) до первого урока (09:00), монитор напоминает учителям
+ * Утром, от начала учебного дня (08:00) до первого урока (09:00), каждые 2 минуты на 10 секунд монитор напоминает учителям
  * отметиться «Я в школе» и показывает QR-код на сайт учителя.
  */
-export function CheckInReminder({ snapshot, minutes }: { snapshot: Snapshot; minutes: number }) {
+export function CheckInReminder({ snapshot, minutes, seconds }: { snapshot: Snapshot; minutes: number; seconds: number }) {
   const url = useTeacherUrl();
   const [svg, setSvg] = useState('');
   useEffect(() => {
@@ -36,7 +39,9 @@ export function CheckInReminder({ snapshot, minutes }: { snapshot: Snapshot; min
 
   const day = snapshot.day;
   const firstLesson = day?.lessons.length ? Math.min(...day.lessons.map((l) => toMin(l.start))) : null;
-  const visible = !!day?.isSchoolDay && firstLesson !== null && minutes >= toMin(day.startOfDay ?? '08:00') && minutes < firstLesson;
+  const inWindow = !!day?.isSchoolDay && firstLesson !== null && minutes >= toMin(day.startOfDay ?? '08:00') && minutes < firstLesson;
+  // Не закрывает схему всё утро: появляется каждые 2 минуты на 10 секунд
+  const visible = inWindow && (minutes * 60 + seconds) % (SHOW_EVERY_MIN * 60) < SHOW_FOR_SEC;
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-20 z-40 flex justify-center px-4">

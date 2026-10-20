@@ -89,6 +89,8 @@ function layoutInRoom(rect: { x: number; y: number; w: number; h: number }, coun
     spots: Array.from({ length: shown }, (_, i) => spot(i)),
     caption: cap > 0,
     cellW,
+    // Подпись может занимать всю ширину своей колонки (но не выходит за стены комнаты)
+    capW: Math.max(cellW, (rect.w - 12) / best.cols - 4),
     extra: count - shown > 0 ? { ...spot(shown), count: count - shown } : null,
   };
 }
@@ -181,7 +183,7 @@ export function BuildingMap({
       const g = geometry.rooms.get(roomId)!;
       const lay = layoutInRoom(g, list.length);
       lay.spots.forEach((s, i) =>
-        out.push({ teacher: list[i]!, ...s, caption: lay.caption, cellW: lay.cellW, showName: lay.caption && s.size >= 44 && list.length <= 6 }),
+        out.push({ teacher: list[i]!, ...s, caption: lay.caption, cellW: lay.capW, showName: lay.caption && s.size >= 30 }),
       );
       if (lay.extra) more.push({ roomId, ...lay.extra });
     }
@@ -285,10 +287,10 @@ export function BuildingMap({
                   className="mt-0.5 flex items-center gap-0.5 overflow-hidden whitespace-nowrap rounded-md bg-white/85 px-0.5 py-px text-[10px] font-medium leading-tight text-slate-700 shadow-sm dark:bg-slate-900/80 dark:text-slate-200"
                   style={{ maxWidth: p.cellW }}
                 >
-                  {p.showName && <span className="truncate px-0.5">{p.teacher.lastName}</span>}
+                  {p.showName && <span className="min-w-0 truncate px-0.5">{`${p.teacher.lastName} ${p.teacher.firstName}`}</span>}
                   {/* Класс, у которого сейчас идёт урок */}
                   {p.teacher.location.className && (
-                    <span className="rounded bg-emerald-500 px-1 font-bold text-white" title={`Урок в классе ${p.teacher.location.className}`}>
+                    <span className="shrink-0 rounded bg-emerald-500 px-1 font-bold text-white" title={`Урок в классе ${p.teacher.location.className}`}>
                       {p.teacher.location.className}
                     </span>
                   )}

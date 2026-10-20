@@ -341,7 +341,7 @@ export function MonitorPage() {
           <EventFeed events={events} />
           <SpotlightCard teacher={spotlight} />
           {clock && <InfoTicker snapshot={snapshot} minutes={clock.minutes} />}
-          {clock && <CheckInReminder snapshot={snapshot} minutes={clock.minutes} />}
+          {clock && <CheckInReminder snapshot={snapshot} minutes={clock.minutes} seconds={clock.sec} />}
         </section>
         {/* Стрелка: открыть / закрыть список учителей */}
         <button
