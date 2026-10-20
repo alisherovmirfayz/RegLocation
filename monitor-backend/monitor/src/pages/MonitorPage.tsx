@@ -11,6 +11,7 @@ import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BuildingMap } from '../monitor/BuildingMap';
 import { TeacherList } from '../monitor/TeacherList';
 import { InfoTicker, Particles, PeriodProgress, SpotlightCard, useIdle, useSpotlight } from '../monitor/Ambient';
+import { CheckInReminder } from '../monitor/CheckInReminder';
 
 const DAYS = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -338,6 +339,7 @@ export function MonitorPage() {
           <EventFeed events={events} />
           <SpotlightCard teacher={spotlight} />
           {clock && <InfoTicker snapshot={snapshot} minutes={clock.minutes} />}
+          {clock && <CheckInReminder snapshot={snapshot} minutes={clock.minutes} />}
         </section>
         {/* Стрелка: открыть / закрыть список учителей */}
         <button

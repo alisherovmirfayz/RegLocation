@@ -1,6 +1,6 @@
 // Типы данных backend RegLocation (проект №1).
 export type RoomType =
-  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING'
+  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE'
   | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'STADIUM' | 'OTHER';
 
 export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
@@ -10,6 +10,7 @@ export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
   DIRECTOR_OFFICE: 'Кабинет директора',
   HEAD_TEACHER_OFFICE: 'Кабинет завуча',
   ACCOUNTING: 'Бухгалтерия',
+  CURATOR_OFFICE: 'Кабинет куратора',
   STAIRS: 'Лестница',
   ELEVATOR: 'Лифт',
   CORRIDOR: 'Коридор',

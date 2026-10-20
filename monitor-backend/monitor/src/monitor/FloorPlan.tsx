@@ -23,6 +23,7 @@ const FLOOR_FILL: Partial<Record<Room['type'], string>> = {
   DIRECTOR_OFFICE: 'fill-violet-50 dark:fill-[#2a2346]',
   HEAD_TEACHER_OFFICE: 'fill-fuchsia-50 dark:fill-[#30213f]',
   ACCOUNTING: 'fill-teal-50 dark:fill-[#18312f]',
+  CURATOR_OFFICE: 'fill-amber-50 dark:fill-[#33291c]',
   RECEPTION: 'fill-sky-50 dark:fill-[#183048]',
   CORRIDOR: 'fill-slate-100 dark:fill-[#141c2e]',
   STAIRS: 'fill-slate-200 dark:fill-[#1a2236]',
@@ -442,7 +443,8 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
     }
     case 'DIRECTOR_OFFICE':
     case 'HEAD_TEACHER_OFFICE':
-    case 'ACCOUNTING': {
+    case 'ACCOUNTING':
+    case 'CURATOR_OFFICE': {
       const dw = Math.min(70, iw * 0.65), dh = Math.min(26, ih * 0.3);
       const dx = ix + (iw - dw) / 2, dy = iy + ih * 0.25;
       els.push(<rect key="desk" x={dx} y={dy} width={dw} height={dh} rx={4} className={FURN} strokeWidth={1} />);
@@ -556,7 +558,7 @@ export const FloorPlan = memo(function FloorPlan({ floor, width, height, occupie
           {(r.type === 'CORRIDOR' || r.type === 'RECEPTION' || r.type === 'CANTEEN' || isWc(r)) && (
             <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={`url(#tiles-${floor.id})`} />
           )}
-          {(r.type === 'CLASSROOM' || r.type === 'TEACHERS_ROOM' || r.type === 'DIRECTOR_OFFICE' || r.type === 'HEAD_TEACHER_OFFICE' || r.type === 'ACCOUNTING' || r.type === 'LAB') && (
+          {(r.type === 'CLASSROOM' || r.type === 'TEACHERS_ROOM' || r.type === 'DIRECTOR_OFFICE' || r.type === 'HEAD_TEACHER_OFFICE' || r.type === 'ACCOUNTING' || r.type === 'CURATOR_OFFICE' || r.type === 'LAB') && (
             <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={`url(#wood-${floor.id})`} />
           )}
           {occupied.has(r.id) && <rect x={r.x} y={r.y} width={r.width} height={r.height} className="fill-brand-400/10 dark:fill-brand-400/10" />}

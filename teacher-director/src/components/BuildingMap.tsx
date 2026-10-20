@@ -16,6 +16,7 @@ const ROOM_STYLE: Record<string, string> = {
   DIRECTOR_OFFICE: 'bg-violet-50 border-violet-300 dark:bg-violet-900/40 dark:border-violet-500/50',
   HEAD_TEACHER_OFFICE: 'bg-fuchsia-50 border-fuchsia-300 dark:bg-fuchsia-900/30 dark:border-fuchsia-500/50',
   ACCOUNTING: 'bg-teal-50 border-teal-300 dark:bg-teal-900/30 dark:border-teal-500/50',
+  CURATOR_OFFICE: 'bg-amber-50 border-amber-300 dark:bg-amber-900/30 dark:border-amber-500/50',
   STAIRS: 'hatch bg-slate-100 border-slate-300 dark:bg-slate-900/60 dark:border-slate-700',
   ELEVATOR: 'hatch bg-slate-100 border-slate-300 dark:bg-slate-900/60 dark:border-slate-700',
   CORRIDOR: 'bg-slate-100/60 border-dashed border-slate-300 dark:bg-slate-900/30 dark:border-slate-700',

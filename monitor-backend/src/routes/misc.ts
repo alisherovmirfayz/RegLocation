@@ -82,7 +82,7 @@ export function publicRouter(ctx: AppContext): Router {
   r.get('/status', ah(async (_req, res) => void res.set('Cache-Control', 'no-store').json(await publicStatus(ctx))));
   // Как страницам получать обновления: Socket.IO или опрос (Vercel), и допустимый размер загрузки
   r.get('/runtime', (_req, res) =>
-    void res.set('Cache-Control', 'no-store').json({ realtime: ctx.config.REALTIME, maxUploadMb: ctx.config.MAX_UPLOAD_MB }),
+    void res.set('Cache-Control', 'no-store').json({ realtime: ctx.config.REALTIME, maxUploadMb: ctx.config.MAX_UPLOAD_MB, teacherUrl: `${ctx.config.PUBLIC_APP_URL.replace(/\/+$/, '')}/teacher` }),
   );
   // Логотип школы публичен (нужен на страницах входа). Личных данных не содержит.
   r.get(

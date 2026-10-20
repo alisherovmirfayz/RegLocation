@@ -1,6 +1,6 @@
 // Типы данных, приходящих от backend (см. src/domain/live.ts).
 export type RoomType =
-  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING'
+  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE'
   | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'STADIUM' | 'OTHER';
 
 export interface Room {
@@ -93,7 +93,7 @@ export interface Snapshot {
   totalCount: number;
   monitor: MonitorSettings;
   simulation: { enabled: boolean; assumeAllPresent: boolean } | null;
-  day?: { meals: { key: string; title: string; start: string; end: string }[]; endOfDay: string; lessons: { number: number; start: string; end: string }[]; isSchoolDay: boolean };
+  day?: { meals: { key: string; title: string; start: string; end: string }[]; startOfDay?: string; endOfDay: string; lessons: { number: number; start: string; end: string }[]; isSchoolDay: boolean };
 }
 
 /** «Отошёл»: куда и до какого времени (время по Ташкенту), одной строкой для перевода */

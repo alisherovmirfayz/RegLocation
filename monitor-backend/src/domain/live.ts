@@ -68,7 +68,7 @@ export interface MonitorSnapshot {
   totalCount: number;
   monitor: MonitorSettings;
   simulation: { enabled: boolean; assumeAllPresent: boolean } | null;
-  day: { meals: { key: string; title: string; start: string; end: string }[]; endOfDay: string; lessons: { number: number; start: string; end: string }[]; isSchoolDay: boolean };
+  day: { meals: { key: string; title: string; start: string; end: string }[]; startOfDay: string; endOfDay: string; lessons: { number: number; start: string; end: string }[]; isSchoolDay: boolean };
 }
 
 interface StaticTeacher {
@@ -334,7 +334,7 @@ export class LiveService {
       totalCount: teachers.length,
       monitor,
       simulation: sim ? { enabled: true, assumeAllPresent: sim.assumeAllPresent } : null,
-      day: { meals: schedule.meals.filter((m) => m.enabled), endOfDay: schedule.endOfDay, lessons: schedule.lessons, isSchoolDay: schedule.schoolDays.includes(eff.dayOfWeek) },
+      day: { meals: schedule.meals.filter((m) => m.enabled), startOfDay: schedule.startOfDay, endOfDay: schedule.endOfDay, lessons: schedule.lessons, isSchoolDay: schedule.schoolDays.includes(eff.dayOfWeek) },
     };
     const hash = sha256(JSON.stringify({ ...body, clock: { ...body.clock, seconds: 0, serverTime: '' } })).slice(0, 16);
     return { hash, ...body };
