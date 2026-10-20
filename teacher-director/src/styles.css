@@ -177,3 +177,9 @@ select option:checked {
     border-color: #ccc !important;
   }
 }
+
+/* Свой «глазик» у поля пароля — встроенный значок Edge скрываем, чтобы не было двух */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

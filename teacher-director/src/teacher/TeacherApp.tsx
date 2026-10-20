@@ -13,6 +13,7 @@ import { MadeBy } from '../components/MadeBy';
 import { TeacherHome } from './TeacherHome';
 import { TeacherSchedule } from './TeacherSchedule';
 import { TeacherProfile } from './TeacherProfile';
+import { PasswordInput } from '../components/PasswordInput';
 
 function TeacherLogin({ onDone }: { onDone: (s: SessionInfo) => void }) {
   const [form, setForm] = useState({ login: '', password: '' });
@@ -70,7 +71,7 @@ function TeacherLogin({ onDone }: { onDone: (s: SessionInfo) => void }) {
             <span className="label">Пароль</span>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input className="input py-3 pl-10" type="password" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <PasswordInput className="input py-3 pl-10" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
             </div>
           </label>
           {error && (

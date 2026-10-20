@@ -7,6 +7,7 @@ import { Logo } from '../components/Logo';
 import { Alert, Button, Field, Modal, PageLoader, PasswordStrength, ThemeToggle } from '../components/ui';
 import { LangSwitch } from '../components/LangSwitch';
 import { MadeBy } from '../components/MadeBy';
+import { PasswordInput } from '../components/PasswordInput';
 
 interface PublicStatus {
   ownerRegistered: boolean;
@@ -126,11 +127,11 @@ export function DirectorRegister({ onDone }: { onDone: (s: SessionInfo) => void 
                 <input className="input" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
               </Field>
               <Field label="Пароль" hint="Не менее 10 символов, буквы и цифры">
-                <input className="input" type="password" value={form.password} onChange={set('password')} autoComplete="new-password" required />
+                <PasswordInput className="input" value={form.password} onChange={set('password')} autoComplete="new-password" required />
                 <PasswordStrength value={form.password} />
               </Field>
               <Field label="Подтверждение пароля">
-                <input className="input" type="password" value={form.passwordConfirm} onChange={set('passwordConfirm')} autoComplete="new-password" required />
+                <PasswordInput className="input" value={form.passwordConfirm} onChange={set('passwordConfirm')} autoComplete="new-password" required />
               </Field>
               {error && <Alert kind="error">{error}</Alert>}
               <Button type="submit" size="lg" className="w-full" loading={busy}>
@@ -232,7 +233,7 @@ function RecoveryModal({ open, onClose }: { open: boolean; onClose: () => void }
             <input className="input text-center text-xl tracking-[0.4em]" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} required />
           </Field>
           <Field label="Новый пароль" hint="Не менее 10 символов, буквы и цифры">
-            <input className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <PasswordInput className="input" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <PasswordStrength value={password} />
           </Field>
           {error && <Alert kind="error">{error}</Alert>}
@@ -292,7 +293,7 @@ export function DirectorLogin({ onDone }: { onDone: (s: SessionInfo) => void }) 
         <Field label="Пароль">
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input className="input pl-10" type="password" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <PasswordInput className="input pl-10" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </div>
         </Field>
         {error && <Alert kind="error">{error}</Alert>}

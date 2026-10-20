@@ -5,6 +5,7 @@ import { DAY_SHORT, type ScheduleSettings } from '../../lib/types';
 import { Alert, Badge, Button, Field, PageLoader, PasswordStrength, useToast } from '../../components/ui';
 import { Logo } from '../../components/Logo';
 import { Page, useLoad } from './common';
+import { PasswordInput } from '../../components/PasswordInput';
 
 interface SettingsData {
   schedule: ScheduleSettings;
@@ -184,14 +185,14 @@ export function SettingsPage() {
               <KeyRound className="h-5 w-5 text-brand-500" /> Мой аккаунт
             </div>
             <Field label="Текущий пароль">
-              <input className="input" type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} required />
+              <PasswordInput className="input" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} required />
             </Field>
             <Field label="Новый пароль">
-              <input className="input" type="password" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} required />
+              <PasswordInput className="input" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} required />
               <PasswordStrength value={pw.newPassword} />
             </Field>
             <Field label="Повторите новый пароль">
-              <input className="input" type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} required />
+              <PasswordInput className="input" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} required />
             </Field>
             <Button type="submit">Сменить пароль</Button>
           </form>

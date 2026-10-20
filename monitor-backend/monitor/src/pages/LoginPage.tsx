@@ -6,6 +6,7 @@ import { login } from '../lib/api';
 import { Logo } from '../components/Logo';
 import { LangSwitch } from '../components/LangSwitch';
 import { MadeBy } from '../components/MadeBy';
+import { PasswordInput } from '../components/PasswordInput';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -64,8 +65,7 @@ export function LoginPage() {
           Пароль
           <div className="relative mt-1.5">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="password"
+            <PasswordInput
               autoComplete="current-password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
