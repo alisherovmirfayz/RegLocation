@@ -247,8 +247,9 @@ export const DEFAULT_SCHOOL2: FloorSeed = {
 export const DEFAULT_SCHOOL2_F1: FloorSeed = {
   name: '1 этаж',
   level: 1,
+  height: 300,
   rooms: [
-    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 240, y: 70, width: 520, height: 280 },
+    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 20, y: 20, width: 960, height: 260 },
   ],
 };
 
