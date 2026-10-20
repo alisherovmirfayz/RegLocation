@@ -16,6 +16,7 @@ import { SchoolEditorPage } from './pages/SchoolEditor';
 import { FloorsRoomsPage } from './pages/FloorsRooms';
 import { MonitorAccessPage } from './pages/MonitorAccess';
 import { SettingsPage } from './pages/Settings';
+import { MadeBy } from '../components/MadeBy';
 
 interface DirectorCtx {
   session: SessionInfo;
@@ -128,7 +129,10 @@ function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+          {children}
+          <MadeBy className="mt-10" />
+        </main>
       </div>
     </div>
   );

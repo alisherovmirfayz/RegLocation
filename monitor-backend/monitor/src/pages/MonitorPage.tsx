@@ -8,6 +8,7 @@ import type { Snapshot } from '../lib/types';
 import { Logo } from '../components/Logo';
 import { LangSwitch } from '../components/LangSwitch';
 import { TeacherQrButton } from '../monitor/TeacherQr';
+import { MadeBy } from '../components/MadeBy';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BuildingMap } from '../monitor/BuildingMap';
 import { TeacherList } from '../monitor/TeacherList';
@@ -344,6 +345,10 @@ export function MonitorPage() {
           <SpotlightCard teacher={spotlight} />
           {clock && <InfoTicker snapshot={snapshot} minutes={clock.minutes} />}
           {clock && <CheckInReminder snapshot={snapshot} minutes={clock.minutes} seconds={clock.sec} />}
+          {/* Подпись автора — в левом нижнем углу схемы, не мешает */}
+          <div className="absolute bottom-4 left-4 z-30 rounded-full border border-slate-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+            <MadeBy />
+          </div>
         </section>
         {/* Стрелка: открыть / закрыть список учителей */}
         <button
