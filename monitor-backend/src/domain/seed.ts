@@ -243,13 +243,12 @@ export const DEFAULT_SCHOOL2: FloorSeed = {
   ],
 };
 
-/** Второе здание, 1 этаж: бассейн (уроки «Basseyn») и коридор с дверью. */
+/** Второе здание, 1 этаж: бассейн (уроки «Basseyn»). */
 export const DEFAULT_SCHOOL2_F1: FloorSeed = {
   name: '1 этаж',
   level: 1,
   rooms: [
-    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 20, y: 20, width: 760, height: 380 },
-    { code: '2-F1-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 780, y: 20, width: 200, height: 380 },
+    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 240, y: 70, width: 520, height: 280 },
   ],
 };
 

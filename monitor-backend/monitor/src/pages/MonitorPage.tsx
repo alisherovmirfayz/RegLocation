@@ -202,6 +202,7 @@ export function MonitorPage() {
   useIdleScroll(scrollRef, attract && !spotlight, snapshot?.monitor.idleAfterSeconds ?? 90, view);
 
   const building = useMemo(() => snapshot?.buildings.find((b) => b.kind === view), [snapshot, view]);
+  const multiFloor = (building?.floors.length ?? 0) > 1;
   const countIn = (kind: string) => snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === kind).length ?? 0;
   // Вкладки зданий; стадион — часть школы, отдельная вкладка показывается только для старой схемы
   const views = VIEWS.filter((v) => snapshot?.buildings.some((b) => b.kind === v.kind));
@@ -333,9 +334,9 @@ export function MonitorPage() {
                     focusTeacherId={focusId ?? spotlight?.id ?? null}
                     scrollRef={scrollRef}
                     epochs={epochs}
-                    // Школа — по 2 этажа в высоту экрана; столовая и стадион (один этаж) — крупно, на весь экран
-                    maxFloorHeight={building.kind === 'SCHOOL' ? Math.max(240, (window.innerHeight - 260) / 2) : Math.max(300, window.innerHeight - 330)}
-                    columns={listOpen || building.kind !== 'SCHOOL' ? 1 : 2}
+                    // Здания с несколькими этажами (школа, второе здание) — по 2 этажа в ряд; один этаж (столовая) — крупно, на весь экран
+                    maxFloorHeight={multiFloor ? Math.max(240, (window.innerHeight - 260) / 2) : Math.max(300, window.innerHeight - 330)}
+                    columns={listOpen || !multiFloor ? 1 : 2}
                   />
                 </motion.div>
               )}
