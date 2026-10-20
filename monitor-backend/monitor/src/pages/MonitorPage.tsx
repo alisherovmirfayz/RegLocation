@@ -7,6 +7,7 @@ import { logout } from '../lib/api';
 import type { Snapshot } from '../lib/types';
 import { Logo } from '../components/Logo';
 import { LangSwitch } from '../components/LangSwitch';
+import { TeacherQrButton } from '../monitor/TeacherQr';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { BuildingMap } from '../monitor/BuildingMap';
 import { TeacherList } from '../monitor/TeacherList';
@@ -288,6 +289,7 @@ export function MonitorPage() {
             </div>
             <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">в школе</div>
           </div>
+          <TeacherQrButton />
           <LangSwitch />
           <ConnectionBadge state={connection} />
           <button

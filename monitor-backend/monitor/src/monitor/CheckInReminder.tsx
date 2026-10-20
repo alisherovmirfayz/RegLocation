@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { BellRing } from 'lucide-react';
-import QRCode from 'qrcode';
-import { api } from '../lib/api';
+import { useTeacherQr } from './TeacherQr';
 import type { Snapshot } from '../lib/types';
 
 const SHOW_EVERY_MIN = 2;
@@ -13,29 +12,12 @@ const toMin = (hm: string) => {
   return h! * 60 + m!;
 };
 
-/** Адрес сайта учителя (с сервера; запасной вариант — тот же домен, что у монитора). */
-function useTeacherUrl() {
-  const [url, setUrl] = useState(`${window.location.origin}/teacher`);
-  useEffect(() => {
-    api<{ teacherUrl?: string }>('/api/public/runtime')
-      .then((r) => r.teacherUrl && setUrl(r.teacherUrl))
-      .catch(() => undefined);
-  }, []);
-  return url;
-}
-
 /**
  * Утром, от начала учебного дня (08:00) до первого урока (09:00), каждые 2 минуты на 10 секунд монитор напоминает учителям
  * отметиться «Я в школе» и показывает QR-код на сайт учителя.
  */
 export function CheckInReminder({ snapshot, minutes, seconds }: { snapshot: Snapshot; minutes: number; seconds: number }) {
-  const url = useTeacherUrl();
-  const [svg, setSvg] = useState('');
-  useEffect(() => {
-    QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0f172a', light: '#ffffff' } })
-      .then(setSvg)
-      .catch(() => setSvg(''));
-  }, [url]);
+  const { url, svg } = useTeacherQr();
 
   const day = snapshot.day;
   const firstLesson = day?.lessons.length ? Math.min(...day.lessons.map((l) => toMin(l.start))) : null;

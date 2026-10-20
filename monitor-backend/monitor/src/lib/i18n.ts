@@ -378,6 +378,7 @@ const UZ: Record<string, string> = {
   'Дорогие учителя!': 'Hurmatli o‘qituvchilar!',
   'Не забудьте нажать кнопку «Я в школе»': '«Men maktabdaman» tugmasini bosishni unutmang',
   'Наведите камеру телефона на QR-код': 'Telefon kamerasini QR-kodga qarating',
+  'QR-код на сайт учителя': 'O‘qituvchi saytiga QR-kod',
   'Кабинет куратора': 'Kurator xonasi',
   'Куратор': 'Kurator',
   'В кабинет': 'Xonaga',
