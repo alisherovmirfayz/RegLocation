@@ -32,33 +32,64 @@ interface Placed {
   x: number;
   y: number;
   size: number;
+  /** Есть место под подпись (фамилия/класс) */
+  caption: boolean;
+  cellW: number;
   showName: boolean;
 }
 
-/** Раскладка аватарок внутри прямоугольника кабинета (сетка по центру). */
+const CAPTION_H = 15; // подпись под аватаркой: фамилия и/или класс
+const MIN_AVATAR = 14;
+
+/**
+ * Раскладка аватарок внутри прямоугольника кабинета (сетка по центру). Всё остаётся внутри стен:
+ * у каждого ряда своё место под подпись; в тесной комнате подписи скрываются; если не помещаются
+ * даже маленькие аватарки — последняя ячейка показывает «+N».
+ */
 function layoutInRoom(rect: { x: number; y: number; w: number; h: number }, count: number) {
   const labelSpace = Math.min(30, rect.h * 0.28);
-  // Снизу оставляем место под фамилию и класс, чтобы подписи не выходили за стену
-  const captionSpace = Math.min(18, rect.h * 0.15);
-  const availH = rect.h - labelSpace - captionSpace - 8;
   const availW = rect.w - 12;
-  let best = { size: 20, cols: 1, rows: count };
-  for (let cols = 1; cols <= count; cols++) {
-    const rows = Math.ceil(count / cols);
-    const size = Math.min(availW / cols, availH / rows) * 0.86;
-    if (size > best.size) best = { size, cols, rows };
+  const availH = rect.h - labelSpace - 8;
+  const fit = (n: number, cap: number) => {
+    let best = { size: 0, cols: 1, rows: n };
+    for (let cols = 1; cols <= n; cols++) {
+      const rows = Math.ceil(n / cols);
+      const size = Math.min(availW / cols / 1.12, availH / rows - cap - 4);
+      if (size > best.size) best = { size, cols, rows };
+    }
+    return best;
+  };
+  let cap = CAPTION_H;
+  let best = fit(count, cap);
+  if (best.size < 26) {
+    cap = 0;
+    best = fit(count, 0);
   }
-  const size = Math.max(18, Math.min(68, best.size));
-  const cellW = size / 0.86;
+  let shown = count;
+  if (best.size < MIN_AVATAR) {
+    const cols = Math.max(1, Math.floor(availW / (MIN_AVATAR * 1.12)));
+    const rows = Math.max(1, Math.floor(availH / (MIN_AVATAR + 4)));
+    shown = Math.max(0, cols * rows - 1);
+    best = { size: MIN_AVATAR, cols, rows };
+  }
+  const size = Math.min(68, best.size);
+  const cellW = size * 1.12;
+  const cellH = size + cap + 4;
   const gridW = cellW * best.cols;
-  const gridH = cellW * best.rows;
+  const gridH = cellH * best.rows;
   const startX = rect.x + (rect.w - gridW) / 2;
   const startY = rect.y + labelSpace + Math.max(0, (availH - gridH) / 2) + 4;
-  return Array.from({ length: count }, (_, i) => {
-    const c = i % best.cols;
-    const r = Math.floor(i / best.cols);
-    return { x: startX + c * cellW + (cellW - size) / 2, y: startY + r * cellW + (cellW - size) / 2, size };
+  const spot = (i: number) => ({
+    x: startX + (i % best.cols) * cellW + (cellW - size) / 2,
+    y: startY + Math.floor(i / best.cols) * cellH,
+    size,
   });
+  return {
+    spots: Array.from({ length: shown }, (_, i) => spot(i)),
+    caption: cap > 0,
+    cellW,
+    extra: count - shown > 0 ? { ...spot(shown), count: count - shown } : null,
+  };
 }
 
 export function BuildingMap({
@@ -142,14 +173,18 @@ export function BuildingMap({
 
   const occupiedIds = useMemo(() => new Set(byRoom.keys()), [byRoom]);
 
-  const placed: Placed[] = useMemo(() => {
+  const { placed, overflow } = useMemo(() => {
     const out: Placed[] = [];
+    const more: { roomId: string; x: number; y: number; size: number; count: number }[] = [];
     for (const [roomId, list] of byRoom) {
       const g = geometry.rooms.get(roomId)!;
-      const spots = layoutInRoom(g, list.length);
-      list.forEach((t, i) => out.push({ teacher: t, ...spots[i]!, showName: spots[i]!.size >= 44 && list.length <= 6 }));
+      const lay = layoutInRoom(g, list.length);
+      lay.spots.forEach((s, i) =>
+        out.push({ teacher: list[i]!, ...s, caption: lay.caption, cellW: lay.cellW, showName: lay.caption && s.size >= 44 && list.length <= 6 }),
+      );
+      if (lay.extra) more.push({ roomId, ...lay.extra });
     }
-    return out;
+    return { placed: out, overflow: more };
   }, [byRoom, geometry]);
 
   // Прокрутка к выбранному учителю
@@ -234,8 +269,11 @@ export function BuildingMap({
               <div className="bob" style={{ animationDelay: `${-(p.teacher.id.charCodeAt(0) % 7) * 0.6}s` }}>
                 <Avatar name={p.teacher} url={p.teacher.avatarUrl} size={p.size} className={focused ? '!ring-amber-400 !ring-4' : ''} />
               </div>
-              {(p.showName || p.teacher.location.className) && (
-                <span className="mt-0.5 flex max-w-[160%] items-center gap-0.5 whitespace-nowrap rounded-md bg-white/85 px-0.5 py-px text-[10px] font-medium leading-tight text-slate-700 shadow-sm dark:bg-slate-900/80 dark:text-slate-200">
+              {p.caption && (p.showName || p.teacher.location.className) && (
+                <span
+                  className="mt-0.5 flex items-center gap-0.5 overflow-hidden whitespace-nowrap rounded-md bg-white/85 px-0.5 py-px text-[10px] font-medium leading-tight text-slate-700 shadow-sm dark:bg-slate-900/80 dark:text-slate-200"
+                  style={{ maxWidth: p.cellW }}
+                >
                   {p.showName && <span className="truncate px-0.5">{p.teacher.lastName}</span>}
                   {/* Класс, у которого сейчас идёт урок */}
                   {p.teacher.location.className && (
@@ -249,6 +287,17 @@ export function BuildingMap({
           );
         })}
       </AnimatePresence>
+      {/* Не поместились в комнату — счётчик «+N» (все они есть в списке учителей) */}
+      {overflow.map((o) => (
+        <div
+          key={`more${o.roomId}`}
+          className="absolute flex items-center justify-center rounded-full bg-brand-600 font-bold text-white shadow"
+          style={{ left: o.x, top: o.y, width: o.size, height: o.size, fontSize: Math.max(9, o.size * 0.42), zIndex: 10 }}
+          title={`Ещё ${o.count}`}
+        >
+          +{o.count}
+        </div>
+      ))}
     </div>
   );
 }
