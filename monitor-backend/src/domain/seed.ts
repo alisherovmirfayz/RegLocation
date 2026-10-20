@@ -218,7 +218,7 @@ async function moveStadiumIntoSchool(prisma: PrismaClient): Promise<void> {
 export const DEFAULT_KINDERGARTEN: FloorSeed = {
   name: 'Детский сад',
   level: 1,
-  height: 680,
+  height: 760,
   rooms: [
     { code: 'DS-AKT', name: 'Актовый зал', type: 'OTHER', x: 20, y: 20, width: 170, height: 340 },
     { code: 'DS-305', name: '305', type: 'CLASSROOM', x: 190, y: 20, width: 145, height: 190 },
@@ -234,11 +234,11 @@ export const DEFAULT_KINDERGARTEN: FloorSeed = {
     { code: 'DS-301', name: '301', type: 'CLASSROOM', x: 720, y: 225, width: 260, height: 160 },
     { code: 'DS-STAIRS', name: 'Лестница', type: 'STAIRS', x: 745, y: 385, width: 235, height: 135 },
     { code: 'DS-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 20, y: 360, width: 725, height: 160 },
-    { code: 'DS-306', name: '306', type: 'CLASSROOM', x: 20, y: 520, width: 125, height: 40 },
-    { code: 'DS-307', name: '307', type: 'CLASSROOM', x: 20, y: 560, width: 125, height: 40 },
-    { code: 'DS-CORRIDOR4', name: 'Коридор', type: 'CORRIDOR', x: 145, y: 520, width: 195, height: 80 },
-    { code: 'DS-308', name: '308', type: 'CLASSROOM', x: 20, y: 600, width: 170, height: 80 },
-    { code: 'DS-309', name: '309', type: 'CLASSROOM', x: 190, y: 600, width: 150, height: 80 },
+    { code: 'DS-306', name: '306', type: 'CLASSROOM', x: 20, y: 520, width: 170, height: 70 },
+    { code: 'DS-307', name: '307', type: 'CLASSROOM', x: 20, y: 590, width: 170, height: 70 },
+    { code: 'DS-CORRIDOR4', name: 'Коридор', type: 'CORRIDOR', x: 190, y: 520, width: 150, height: 140 },
+    { code: 'DS-308', name: '308', type: 'CLASSROOM', x: 20, y: 660, width: 170, height: 90 },
+    { code: 'DS-309', name: '309', type: 'CLASSROOM', x: 190, y: 660, width: 150, height: 90 },
   ],
 };
 

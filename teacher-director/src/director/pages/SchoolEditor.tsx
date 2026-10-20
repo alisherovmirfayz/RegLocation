@@ -204,7 +204,7 @@ export function SchoolEditorPage() {
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-white/5">
-          {(['SCHOOL', 'CANTEEN', 'KINDERGARTEN'] as const).map((k) => (
+          {(['SCHOOL', 'KINDERGARTEN', 'CANTEEN'] as const).map((k) => (
             <button
               key={k}
               disabled={dirty}

@@ -127,9 +127,9 @@ function useIdleScroll(ref: React.RefObject<HTMLDivElement | null>, enabled: boo
 
 const VIEWS = [
   { kind: 'SCHOOL', label: 'Школа', Icon: Building2, pill: 'bg-brand-600 shadow-brand-600/30' },
+  { kind: 'KINDERGARTEN', label: 'Детский сад', Icon: Baby, pill: 'bg-pink-500 shadow-pink-500/30' },
   { kind: 'CANTEEN', label: 'Столовая', Icon: Utensils, pill: 'bg-orange-500 shadow-orange-500/30' },
   { kind: 'STADIUM', label: 'Стадион', Icon: Trophy, pill: 'bg-emerald-600 shadow-emerald-600/30' },
-  { kind: 'KINDERGARTEN', label: 'Детский сад', Icon: Baby, pill: 'bg-pink-500 shadow-pink-500/30' },
 ] as const;
 
 export function MonitorPage() {

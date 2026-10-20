@@ -564,7 +564,7 @@ describe('Детский сад', () => {
     const kg = ((await director.get('/api/director/buildings')).body as B[]).find((b) => b.kind === 'KINDERGARTEN')!;
     expect(kg).toBeTruthy();
     const rooms = kg.floors.flatMap((f) => f.rooms);
-    expect(kg.floors[0]!.height).toBe(680);
+    expect(kg.floors[0]!.height).toBe(760);
     // Номера 301–309 заняты школой: коды DS-…, на схеме — «301»
     expect(rooms.find((r) => r.code === 'DS-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
     expect(rooms.filter((r) => /^DS-30\d$/.test(r.code))).toHaveLength(9);
