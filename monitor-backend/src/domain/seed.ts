@@ -240,7 +240,16 @@ export const DEFAULT_SCHOOL2: FloorSeed = {
     { code: '2-308', name: '308', type: 'CLASSROOM', x: 20, y: 660, width: 170, height: 90 },
     { code: '2-309', name: '309', type: 'CLASSROOM', x: 190, y: 660, width: 150, height: 90 },
     { code: '2-310', name: '310', type: 'CLASSROOM', x: 340, y: 520, width: 160, height: 140 },
-    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 500, y: 520, width: 480, height: 240 },
+  ],
+};
+
+/** Второе здание, 1 этаж: бассейн (уроки «Basseyn») и коридор с дверью. */
+export const DEFAULT_SCHOOL2_F1: FloorSeed = {
+  name: '1 этаж',
+  level: 1,
+  rooms: [
+    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 20, y: 20, width: 760, height: 380 },
+    { code: '2-F1-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 780, y: 20, width: 200, height: 380 },
   ],
 };
 
@@ -255,9 +264,11 @@ async function ensureSchool2(prisma: PrismaClient): Promise<void> {
       if (claimed.count === 0) return false;
       if (await tx.building.findFirst({ where: { kind: 'SCHOOL2' } })) return false;
       // Коды комнат уникальны во всей базе: занятые не трогаем
-      const taken = new Set((await tx.room.findMany({ where: { code: { in: DEFAULT_SCHOOL2.rooms.map((r) => r.code) } }, select: { code: true } })).map((r) => r.code));
+      const all = [...DEFAULT_SCHOOL2.rooms, ...DEFAULT_SCHOOL2_F1.rooms];
+      const taken = new Set((await tx.room.findMany({ where: { code: { in: all.map((r) => r.code) } }, select: { code: true } })).map((r) => r.code));
       const b2 = await tx.building.create({ data: { kind: 'SCHOOL2', name: 'Второе здание' } });
       await createFloor(tx as PrismaClient, b2.id, { ...DEFAULT_SCHOOL2, rooms: DEFAULT_SCHOOL2.rooms.filter((r) => !taken.has(r.code)) }, 0);
+      await createFloor(tx as PrismaClient, b2.id, { ...DEFAULT_SCHOOL2_F1, rooms: DEFAULT_SCHOOL2_F1.rooms.filter((r) => !taken.has(r.code)) }, 1);
       return true;
     },
     { timeout: 30_000 },

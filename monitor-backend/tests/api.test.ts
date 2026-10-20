@@ -560,7 +560,7 @@ describe('Стадион', () => {
 
 describe('Второе здание школы', () => {
   it('отдельное здание по чертежу; учительская школы остаётся основной; удалённое не возвращается', async () => {
-    type B = { id: string; kind: string; floors: { id: string; height: number; rooms: { code: string; name: string; type: string }[] }[] };
+    type B = { id: string; kind: string; floors: { id: string; name: string; height: number; rooms: { code: string; name: string; type: string }[] }[] };
     const b2 = ((await director.get('/api/director/buildings')).body as B[]).find((b) => b.kind === 'SCHOOL2')!;
     expect(b2).toBeTruthy();
     const rooms = b2.floors.flatMap((f) => f.rooms);
@@ -568,7 +568,9 @@ describe('Второе здание школы', () => {
     // Номера 301–309 заняты в основном здании: коды 2-…, на схеме — «301»
     expect(rooms.find((r) => r.code === '2-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
     expect(rooms.filter((r) => /^2-3[01]\d$/.test(r.code))).toHaveLength(10);
-    expect(rooms.find((r) => r.code === 'BASSEYN')).toMatchObject({ type: 'POOL' });
+    // Бассейн — на 1 этаже второго здания
+    expect(b2.floors.find((f) => f.name === '1 этаж')?.rooms.find((r) => r.code === 'BASSEYN')).toMatchObject({ type: 'POOL' });
+    expect(b2.floors[0]!.rooms.some((r) => r.code === 'BASSEYN')).toBe(false);
     expect(rooms.some((r) => r.name === 'Актовый зал')).toBe(true);
     // Основная учительская (для свободного времени) — школьная
     const snap = await h.server.ctx.live.snapshot();
