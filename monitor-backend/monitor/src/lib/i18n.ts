@@ -408,9 +408,10 @@ const UZ: Record<string, string> = {
   'Поиск: ФИО, предмет, класс, кабинет': 'Qidiruv: F.I.Sh., fan, sinf, xona',
   'Предмет / должность': 'Fan / lavozim',
   'Предмет или должность': 'Fan yoki lavozim',
-  'Например: Математика, Английский язык, Завуч, Директор': 'Masalan: Matematika, Ingliz tili, Zavuch, Direktor',
-  'Директор — в кабинете директора, завуч — в кабинете завуча (кроме обеда и полдника), учитель — по расписанию':
-    'Direktor — direktor kabinetida, zavuch — zavuch xonasida (tushlik va tamaddidan tashqari), o‘qituvchi — jadval bo‘yicha',
+  'Например: Математика, Английский язык, Завуч, Директор, Куратор, Ресепшен': 'Masalan: Matematika, Ingliz tili, Zavuch, Direktor, Kurator, Qabulxona',
+  'Бассейн': 'Basseyn',
+  'Директор, завуч и куратор — в своём кабинете, ресепшен — на ресепшене (кроме обеда и полдника), учитель — по расписанию':
+    'Direktor, zavuch va kurator — o‘z xonasida, qabulxona xodimi — qabulxonada (tushlik va tamaddidan tashqari), o‘qituvchi — jadval bo‘yicha',
   'Роль': 'Rol',
   'Роль на карте': 'Xaritadagi rol',
   'Определить по должности': 'Lavozim bo‘yicha aniqlash',

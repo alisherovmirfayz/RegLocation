@@ -21,6 +21,7 @@ const TYPE_COLOR: Partial<Record<RoomType, string>> = {
   DIRECTOR_OFFICE: 'bg-violet-50 border-violet-300 dark:bg-violet-900/30 dark:border-violet-600',
   HEAD_TEACHER_OFFICE: 'bg-fuchsia-50 border-fuchsia-300 dark:bg-fuchsia-900/30 dark:border-fuchsia-600',
   CURATOR_OFFICE: 'bg-amber-50 border-amber-300 dark:bg-amber-900/30 dark:border-amber-600',
+  POOL: 'bg-sky-50 border-sky-300 dark:bg-sky-900/30 dark:border-sky-600',
   RECEPTION: 'bg-sky-50 border-sky-300 dark:bg-sky-900/30 dark:border-sky-600',
 };
 

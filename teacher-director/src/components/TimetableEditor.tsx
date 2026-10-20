@@ -64,17 +64,23 @@ export function TimetableEditor({ role, base, onSaved }: { role: 'teacher' | 'di
 
   const roomCodes = useMemo(() => {
     const m = new Map<string, string>();
+    // Сначала коды, потом названия (не перекрывая коды): «305» — кабинет 305 главного здания, а не «305» второго
+    for (const r of data?.rooms ?? []) m.set(r.code.toLowerCase(), r.code);
     for (const r of data?.rooms ?? []) {
-      m.set(r.code.toLowerCase(), r.code);
-      m.set(r.name.toLowerCase().replace(/\s+/g, ''), r.code);
+      const k = r.name.toLowerCase().replace(/\s+/g, '');
+      if (!m.has(k)) m.set(k, r.code);
     }
     return m;
   }, [data]);
-  // «303 (A)» — кабинет 303 (буква корпуса/крыла), если отдельного «303A» нет
+  // Буква здания: «303» и «303 (A)» — главное здание, «303 (B)» — второе (код 2-303); отдельное «303A» — важнее
   const resolveRoom = (s: string) => {
     const t = s.trim().toLowerCase();
     const wing = /^(\d{2,4})\s*[-(]?\s*([a-zа-я])\s*\)?$/.exec(t);
-    return roomCodes.get(t) ?? roomCodes.get(t.replace(/\s+/g, '')) ?? (wing ? roomCodes.get(wing[1]! + wing[2]!) ?? roomCodes.get(wing[1]!) : undefined) ?? null;
+    const direct = roomCodes.get(t) ?? roomCodes.get(t.replace(/\s+/g, ''));
+    if (direct || !wing) return direct ?? null;
+    const [, num, raw] = wing;
+    const letter = raw === 'а' ? 'a' : raw === 'в' ? 'b' : raw!;
+    return roomCodes.get(num! + letter) ?? (letter === 'b' ? roomCodes.get(`2-${num}`) : letter === 'a' ? roomCodes.get(num!) : roomCodes.get(num!)) ?? null;
   };
 
   const setCell = (d: number, l: number, patch: Partial<Cell>) =>

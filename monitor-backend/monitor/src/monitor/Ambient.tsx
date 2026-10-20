@@ -53,6 +53,8 @@ const REASON: Record<string, string> = {
   HEAD_TEACHER_OFFICE: 'Рабочий кабинет',
   UNKNOWN_ROOM: 'Кабинет не найден в схеме',
   AWAY: 'Отошёл',
+  CURATOR_OFFICE: 'Кабинет куратора',
+  RECEPTION: 'Ресепшен',
 };
 
 export function SpotlightCard({ teacher, intervalMs = 9000 }: { teacher: Teacher | null; intervalMs?: number }) {

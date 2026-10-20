@@ -1,6 +1,6 @@
 import { activeLesson, activeMeal, isDayEnded, nextLesson, type ScheduleSettings } from './schedule';
 
-export type StaffKind = 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER';
+export type StaffKind = 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER' | 'CURATOR' | 'RECEPTION';
 
 export type LocationReason =
   | 'ABSENT'
@@ -8,6 +8,8 @@ export type LocationReason =
   | 'MANUAL'
   | 'DIRECTOR_OFFICE'
   | 'HEAD_TEACHER_OFFICE'
+  | 'CURATOR_OFFICE'
+  | 'RECEPTION'
   | 'LESSON'
   | 'FREE'
   | 'UNKNOWN_ROOM'
@@ -36,6 +38,8 @@ export interface SpecialRooms {
   teachersRoomId: string | null;
   directorOfficeId: string | null;
   headTeacherOfficeId: string | null;
+  curatorOfficeId: string | null;
+  receptionId: string | null;
 }
 
 export interface LocationInput {
@@ -150,6 +154,12 @@ export function computeLocation(input: LocationInput): ComputedLocation {
   }
   if (input.kind === 'HEAD_TEACHER') {
     return { present: true, roomId: rooms.headTeacherOfficeId, reason: 'HEAD_TEACHER_OFFICE', nextLesson: next };
+  }
+  if (input.kind === 'CURATOR') {
+    return { present: true, roomId: rooms.curatorOfficeId, reason: 'CURATOR_OFFICE', nextLesson: next };
+  }
+  if (input.kind === 'RECEPTION') {
+    return { present: true, roomId: rooms.receptionId, reason: 'RECEPTION', nextLesson: next };
   }
 
   if (lesson && slot) {

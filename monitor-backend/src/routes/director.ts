@@ -19,7 +19,7 @@ import { MonitorSettingsSchema } from '../domain/settings';
 import { PasswordChangeSchema } from './teacher';
 
 const ROOM_TYPES = [
-  'CLASSROOM', 'RECEPTION', 'TEACHERS_ROOM', 'DIRECTOR_OFFICE', 'HEAD_TEACHER_OFFICE', 'ACCOUNTING', 'CURATOR_OFFICE', 'STAIRS', 'ELEVATOR',
+  'CLASSROOM', 'RECEPTION', 'TEACHERS_ROOM', 'DIRECTOR_OFFICE', 'HEAD_TEACHER_OFFICE', 'ACCOUNTING', 'CURATOR_OFFICE', 'POOL', 'STAIRS', 'ELEVATOR',
   'CORRIDOR', 'GYM', 'LAB', 'CANTEEN', 'KITCHEN', 'STADIUM', 'OTHER',
 ] as const;
 

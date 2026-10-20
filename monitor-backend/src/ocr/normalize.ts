@@ -117,6 +117,9 @@ export interface RoomRef {
   name: string;
 }
 
+/** Коды кабинетов второго здания школы: «2-305». В расписании такой кабинет пишут «305 (B)». */
+export const SECOND_BUILDING_PREFIX = '2-';
+
 const squash = (s: string) =>
   s
     .toLowerCase()
@@ -133,16 +136,31 @@ export function normalizeRoom(raw: string, rooms: RoomRef[], ocrConfidence = 1):
 
   // 1) Прямое совпадение с кодом или названием помещения (например, «Sport zal 1»).
   const sq = squash(trimmed);
-  const direct = rooms.find((r) => squash(r.code) === sq || squash(r.name) === sq);
+  // Код важнее названия: «305» — кабинет 305 главного здания, а не комната «305» второго здания (код 2-305)
+  const direct = rooms.find((r) => squash(r.code) === sq) ?? rooms.find((r) => squash(r.name) === sq);
   if (direct) return { value: direct.code, confidence: ocrConfidence, valid: true, corrected: false, roomId: direct.id };
 
-  // 2) Номер с буквой корпуса/крыла: «303 (A)», «303A», «303-А» → кабинет «303A», если он есть, иначе 303 (на проверку)
+  // 2) Номер с буквой здания: «305 (A)» — главное здание (кабинет 305), «305 (B)» — второе здание (кабинет 2-305).
+  //    Если есть отдельное помещение «303A» — берём его; другие буквы — кабинет с тем же номером (на проверку).
   const wing = /^(\d{2,4})\s*[-(]?\s*([A-Za-zА-Яа-я])\s*\)?$/.exec(trimmed);
   if (wing) {
     const num = wing[1]!;
-    const letter = cleanup(wing[2]!);
+    const letter = cleanup(wing[2]!.toUpperCase());
     const exact = rooms.find((r) => squash(r.code) === squash(num + letter));
     if (exact) return { value: exact.code, confidence: ocrConfidence, valid: true, corrected: false, roomId: exact.id };
+    if (letter === 'A' || letter === 'B') {
+      const code = letter === 'B' ? `${SECOND_BUILDING_PREFIX}${num}` : num;
+      const inBuilding = rooms.find((r) => r.code === code);
+      if (inBuilding) return { value: inBuilding.code, confidence: ocrConfidence, valid: true, corrected: false, roomId: inBuilding.id };
+      return {
+        value: code,
+        confidence: Math.min(ocrConfidence, 0.5),
+        valid: false,
+        corrected: false,
+        roomId: null,
+        note: `Кабинета ${num} нет в схеме ${letter === 'B' ? 'второго' : 'главного'} здания`,
+      };
+    }
     const base = rooms.find((r) => r.code === num);
     if (base) {
       return {

@@ -3,7 +3,7 @@ import { computeLocation, type LocationInput, type TimetableSlot } from '../src/
 import { DEFAULT_SCHEDULE, describePeriod, lessonEndMinutes } from '../src/domain/schedule';
 import { parseHM, toLocal, localToUtc } from '../src/lib/time';
 
-const rooms = { canteenRoomId: 'canteen', teachersRoomId: 'teachers', directorOfficeId: 'director', headTeacherOfficeId: 'zavuch' };
+const rooms = { canteenRoomId: 'canteen', teachersRoomId: 'teachers', directorOfficeId: 'director', headTeacherOfficeId: 'zavuch', curatorOfficeId: 'curator', receptionId: 'reception' };
 const timetable: TimetableSlot[] = [
   { dayOfWeek: 1, lessonNumber: 3, className: '10A', roomId: 'r404', roomLabel: '404' },
   { dayOfWeek: 1, lessonNumber: 4, className: '6B', roomId: 'r405', roomLabel: '405' },
@@ -56,6 +56,8 @@ describe('Определение местоположения: приорите�
   it('директор — в кабинете директора, завуч — в кабинете завуча, в обед — столовая', () => {
     expect(at('11:00', { kind: 'DIRECTOR' })).toMatchObject({ roomId: 'director', reason: 'DIRECTOR_OFFICE' });
     expect(at('11:00', { kind: 'HEAD_TEACHER' })).toMatchObject({ roomId: 'zavuch', reason: 'HEAD_TEACHER_OFFICE' });
+    expect(at('11:00', { kind: 'CURATOR' })).toMatchObject({ roomId: 'curator', reason: 'CURATOR_OFFICE' });
+    expect(at('11:00', { kind: 'RECEPTION' })).toMatchObject({ roomId: 'reception', reason: 'RECEPTION' });
     expect(at('12:45', { kind: 'DIRECTOR' })).toMatchObject({ roomId: 'canteen', reason: 'MEAL' });
     expect(at('15:50', { kind: 'HEAD_TEACHER' })).toMatchObject({ roomId: 'canteen', reason: 'MEAL', mealKey: 'snack' });
     expect(at('13:15', { kind: 'DIRECTOR' })).toMatchObject({ roomId: 'director' });

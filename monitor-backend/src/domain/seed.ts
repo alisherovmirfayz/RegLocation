@@ -239,6 +239,8 @@ export const DEFAULT_SCHOOL2: FloorSeed = {
     { code: '2-CORRIDOR4', name: 'Коридор', type: 'CORRIDOR', x: 190, y: 520, width: 150, height: 140 },
     { code: '2-308', name: '308', type: 'CLASSROOM', x: 20, y: 660, width: 170, height: 90 },
     { code: '2-309', name: '309', type: 'CLASSROOM', x: 190, y: 660, width: 150, height: 90 },
+    { code: '2-310', name: '310', type: 'CLASSROOM', x: 340, y: 520, width: 160, height: 140 },
+    { code: 'BASSEYN', name: 'Бассейн', type: 'POOL', x: 500, y: 520, width: 480, height: 240 },
   ],
 };
 

@@ -7,10 +7,12 @@ import { badRequest } from '../lib/errors';
 import { avatarUrl, compareClasses } from './live';
 import { toLocal } from '../lib/time';
 
-/** Определяет тип сотрудника по должности: «Директор» → кабинет директора, «Завуч» → кабинет завуча. */
+/** Тип сотрудника по должности: «Директор» → кабинет директора, «Завуч» → кабинет завуча, «Куратор» → кабинет куратора, «Ресепшен» → ресепшен. */
 export function detectStaffKind(positionTitle: string): StaffKind {
   const t = positionTitle.toLowerCase();
   if (/завуч|zavuch|заместитель директора|замдиректора|o[ʻ']?quv ishlari/.test(t)) return 'HEAD_TEACHER';
+  if (/куратор|kurator|curator/.test(t)) return 'CURATOR';
+  if (/ресепш|reception|resepsh|qabulxona/.test(t)) return 'RECEPTION';
   if (/директор|direktor|director/.test(t)) return 'DIRECTOR';
   return 'TEACHER';
 }
@@ -19,7 +21,7 @@ export const TeacherInputSchema = z.object({
   firstName: z.string().trim().min(1, 'Введите имя').max(60),
   lastName: z.string().trim().min(1, 'Введите фамилию').max(60),
   positionTitle: z.string().trim().min(1, 'Укажите предмет или должность').max(80),
-  kind: z.enum(['TEACHER', 'HEAD_TEACHER', 'DIRECTOR']).optional(),
+  kind: z.enum(['TEACHER', 'HEAD_TEACHER', 'DIRECTOR', 'CURATOR', 'RECEPTION']).optional(),
   subject: z.string().trim().max(80).optional().nullable(),
   classes: z.array(z.string().trim().max(10)).max(60).default([]),
 });

@@ -1,6 +1,6 @@
 // Типы данных backend RegLocation (проект №1).
 export type RoomType =
-  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE'
+  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE' | 'POOL'
   | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'STADIUM' | 'OTHER';
 
 export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
@@ -11,6 +11,7 @@ export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
   HEAD_TEACHER_OFFICE: 'Кабинет завуча',
   ACCOUNTING: 'Бухгалтерия',
   CURATOR_OFFICE: 'Кабинет куратора',
+  POOL: 'Бассейн',
   STAIRS: 'Лестница',
   ELEVATOR: 'Лифт',
   CORRIDOR: 'Коридор',
@@ -49,9 +50,9 @@ export interface Building {
   floors: Floor[];
 }
 
-export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
+export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'CURATOR_OFFICE' | 'RECEPTION' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
 export type AwayPlace = 'ON_SITE' | 'OFF_SITE' | 'ROOM';
-export type StaffKind = 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER';
+export type StaffKind = 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER' | 'CURATOR' | 'RECEPTION';
 
 export interface Location {
   present: boolean;
@@ -76,6 +77,8 @@ export const REASON_LABEL: Record<Reason, string> = {
   MANUAL: 'Назначено директором',
   DIRECTOR_OFFICE: 'Кабинет директора',
   HEAD_TEACHER_OFFICE: 'Кабинет завуча',
+  CURATOR_OFFICE: 'Кабинет куратора',
+  RECEPTION: 'Ресепшен',
   LESSON: 'Урок по расписанию',
   FREE: 'Свободное время',
   UNKNOWN_ROOM: 'Кабинет не найден в схеме',
@@ -252,7 +255,7 @@ export interface AuditRow {
 
 export const DAY_NAMES = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 export const DAY_SHORT = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-export const KIND_LABEL: Record<StaffKind, string> = { TEACHER: 'Учитель', DIRECTOR: 'Директор', HEAD_TEACHER: 'Завуч' };
+export const KIND_LABEL: Record<StaffKind, string> = { TEACHER: 'Учитель', DIRECTOR: 'Директор', HEAD_TEACHER: 'Завуч', CURATOR: 'Куратор', RECEPTION: 'Ресепшен' };
 
 export const hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 

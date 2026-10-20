@@ -13,6 +13,8 @@ const REASON_LABEL: Record<string, string> = {
   HEAD_TEACHER_OFFICE: 'Кабинет завуча',
   UNKNOWN_ROOM: 'Кабинет не найден в схеме',
   AWAY: 'Отошёл',
+  CURATOR_OFFICE: 'Кабинет куратора',
+  RECEPTION: 'Ресепшен',
 };
 
 export function TeacherList({

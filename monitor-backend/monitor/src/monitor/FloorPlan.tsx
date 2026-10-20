@@ -24,6 +24,7 @@ const FLOOR_FILL: Partial<Record<Room['type'], string>> = {
   HEAD_TEACHER_OFFICE: 'fill-fuchsia-50 dark:fill-[#30213f]',
   ACCOUNTING: 'fill-teal-50 dark:fill-[#18312f]',
   CURATOR_OFFICE: 'fill-amber-50 dark:fill-[#33291c]',
+  POOL: 'fill-sky-50 dark:fill-[#10283a]',
   RECEPTION: 'fill-sky-50 dark:fill-[#183048]',
   CORRIDOR: 'fill-slate-100 dark:fill-[#141c2e]',
   STAIRS: 'fill-slate-200 dark:fill-[#1a2236]',
@@ -381,6 +382,19 @@ function Furniture({ room, door, board }: { room: Room; door: DoorInfo | null; b
       const k = Math.min(ih * 0.5, iw * 0.12);
       els.push(<path key="k1" d={`M ${ix} ${iy + ih / 2 - k} A ${k} ${k} 0 0 1 ${ix} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
       els.push(<path key="k2" d={`M ${ix + iw} ${iy + ih / 2 - k} A ${k} ${k} 0 0 0 ${ix + iw} ${iy + ih / 2 + k}`} fill="none" className={cls} strokeWidth={2} />);
+      break;
+    }
+    case 'POOL': {
+      // Бассейн: вода с бортиком и плавательными дорожками
+      const m = Math.min(iw, ih) * 0.06;
+      const wx = ix + m, wy = iy + m, ww = iw - m * 2, wh = ih - m * 2;
+      els.push(<rect key="deck" x={ix} y={iy} width={iw} height={ih} rx={6} className="fill-slate-200/70 dark:fill-slate-700/40" />);
+      els.push(<rect key="water" x={wx} y={wy} width={ww} height={wh} rx={4} className="fill-sky-300/80 stroke-sky-500/70 dark:fill-sky-700/60 dark:stroke-sky-400/50" strokeWidth={2} />);
+      const lanes = Math.max(3, Math.min(8, Math.round(wh / 22)));
+      for (let k = 1; k < lanes; k++) {
+        const ly = wy + (k * wh) / lanes;
+        els.push(<line key={`ln${k}`} x1={wx + 6} y1={ly} x2={wx + ww - 6} y2={ly} className="stroke-white/80 dark:stroke-sky-200/50" strokeWidth={1.5} strokeDasharray="6 5" />);
+      }
       break;
     }
     case 'STADIUM': {

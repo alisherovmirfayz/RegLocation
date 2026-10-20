@@ -567,7 +567,8 @@ describe('Второе здание школы', () => {
     expect(b2.floors[0]!).toMatchObject({ height: 760, name: '3 этаж' });
     // Номера 301–309 заняты в основном здании: коды 2-…, на схеме — «301»
     expect(rooms.find((r) => r.code === '2-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
-    expect(rooms.filter((r) => /^2-30\d$/.test(r.code))).toHaveLength(9);
+    expect(rooms.filter((r) => /^2-3[01]\d$/.test(r.code))).toHaveLength(10);
+    expect(rooms.find((r) => r.code === 'BASSEYN')).toMatchObject({ type: 'POOL' });
     expect(rooms.some((r) => r.name === 'Актовый зал')).toBe(true);
     // Основная учительская (для свободного времени) — школьная
     const snap = await h.server.ctx.live.snapshot();

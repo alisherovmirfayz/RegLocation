@@ -1,6 +1,6 @@
 // Типы данных, приходящих от backend (см. src/domain/live.ts).
 export type RoomType =
-  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE'
+  | 'CLASSROOM' | 'RECEPTION' | 'TEACHERS_ROOM' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'ACCOUNTING' | 'CURATOR_OFFICE' | 'POOL'
   | 'STAIRS' | 'ELEVATOR' | 'CORRIDOR' | 'GYM' | 'LAB' | 'CANTEEN' | 'KITCHEN' | 'STADIUM' | 'OTHER';
 
 export interface Room {
@@ -31,7 +31,7 @@ export interface Building {
   floors: Floor[];
 }
 
-export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
+export type Reason = 'ABSENT' | 'MEAL' | 'MANUAL' | 'DIRECTOR_OFFICE' | 'HEAD_TEACHER_OFFICE' | 'CURATOR_OFFICE' | 'RECEPTION' | 'LESSON' | 'FREE' | 'UNKNOWN_ROOM' | 'AWAY';
 export type AwayPlace = 'ON_SITE' | 'OFF_SITE' | 'ROOM';
 
 export interface Location {
@@ -56,7 +56,7 @@ export interface Teacher {
   lastName: string;
   positionTitle: string;
   subject: string | null;
-  kind: 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER';
+  kind: 'TEACHER' | 'DIRECTOR' | 'HEAD_TEACHER' | 'CURATOR' | 'RECEPTION';
   avatarUrl: string | null;
   present: boolean;
   location: Location;

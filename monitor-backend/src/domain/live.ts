@@ -191,7 +191,7 @@ export class LiveService {
     ]);
 
     const roomIndex: StaticData['roomIndex'] = new Map();
-    const special: SpecialRooms = { canteenRoomId: null, teachersRoomId: null, directorOfficeId: null, headTeacherOfficeId: null };
+    const special: SpecialRooms = { canteenRoomId: null, teachersRoomId: null, directorOfficeId: null, headTeacherOfficeId: null, curatorOfficeId: null, receptionId: null };
     const snapBuildings: SnapshotBuilding[] = buildings.map((b) => ({
       id: b.id,
       kind: b.kind,
@@ -219,6 +219,8 @@ export class LiveService {
           if (r.type === 'TEACHERS_ROOM' && !special.teachersRoomId) special.teachersRoomId = r.id;
           if (r.type === 'DIRECTOR_OFFICE' && !special.directorOfficeId) special.directorOfficeId = r.id;
           if (r.type === 'HEAD_TEACHER_OFFICE' && !special.headTeacherOfficeId) special.headTeacherOfficeId = r.id;
+          if (r.type === 'CURATOR_OFFICE' && !special.curatorOfficeId) special.curatorOfficeId = r.id;
+          if (r.type === 'RECEPTION' && !special.receptionId) special.receptionId = r.id;
           return room;
         }),
       })),

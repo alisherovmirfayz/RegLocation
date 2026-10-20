@@ -22,11 +22,22 @@ describe('Классы: не путать буквы и цифры', () => {
   it('исправленное значение получает пониженную уверенность (требует проверки)', () => {
     expect(normalizeClass('IOA', 0.95).confidence).toBeLessThan(0.8);
     expect(normalizeClass('10A', 0.95).confidence).toBe(0.95);
-    // Кабинет с буквой корпуса: «303 (A)» → 303 (на проверку), а при наличии «303A» — точно он
-    const rs = [{ id: 'r303', code: '303', name: 'Кабинет 303' }];
-    expect(normalizeRoom('303 (A)', rs)).toMatchObject({ value: '303', roomId: 'r303', valid: true });
-    expect(normalizeRoom('303 (A)', rs, 0.95).confidence).toBeLessThan(0.8);
+    // Буква здания: «303» и «303 (A)» — главное здание, «303 (B)» — второе (код 2-303)
+    const rs = [
+      { id: 'r303', code: '303', name: 'Кабинет 303' },
+      { id: 'b303', code: '2-303', name: '303' },
+    ];
+    expect(normalizeRoom('303', rs)).toMatchObject({ value: '303', roomId: 'r303', valid: true });
+    expect(normalizeRoom('303', [...rs].reverse())).toMatchObject({ roomId: 'r303' }); // порядок в базе не важен
+    expect(normalizeRoom('303 (A)', rs, 0.95)).toMatchObject({ value: '303', roomId: 'r303', valid: true, confidence: 0.95 });
+    expect(normalizeRoom('303 (B)', rs, 0.95)).toMatchObject({ value: '2-303', roomId: 'b303', valid: true, confidence: 0.95 });
+    expect(normalizeRoom('303 (В)', rs)).toMatchObject({ roomId: 'b303' }); // кириллическая «В»
+    expect(normalizeRoom('310 (B)', rs)).toMatchObject({ roomId: null, valid: false });
+    // Отдельное помещение «303A» важнее буквы здания
     expect(normalizeRoom('303 (A)', [...rs, { id: 'r303a', code: '303A', name: 'Кабинет 303A' }])).toMatchObject({ value: '303A', roomId: 'r303a' });
+    // Другие буквы — кабинет с тем же номером, на проверку
+    expect(normalizeRoom('303 (C)', rs, 0.95)).toMatchObject({ roomId: 'r303' });
+    expect(normalizeRoom('303 (C)', rs, 0.95).confidence).toBeLessThan(0.8);
     // Кириллическая «З» выглядит как «3»: значение исправляется, но остаётся на проверке
     expect(normalizeClass('ЗВ', 0.95)).toMatchObject({ value: '3B', valid: true });
     expect(normalizeClass('зв', 0.95).confidence).toBeLessThan(0.8);
@@ -103,6 +114,9 @@ describe('Тип сотрудника по должности', () => {
   it('директор / завуч / учитель', () => {
     expect(detectStaffKind('Директор')).toBe('DIRECTOR');
     expect(detectStaffKind('Direktor')).toBe('DIRECTOR');
+    expect(detectStaffKind('Куратор')).toBe('CURATOR');
+    expect(detectStaffKind('Kurator')).toBe('CURATOR');
+    expect(detectStaffKind('Ресепшен')).toBe('RECEPTION');
     expect(detectStaffKind('Завуч')).toBe('HEAD_TEACHER');
     expect(detectStaffKind('Заместитель директора по УВР')).toBe('HEAD_TEACHER');
     expect(detectStaffKind('Математика')).toBe('TEACHER');
