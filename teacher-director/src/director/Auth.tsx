@@ -6,6 +6,7 @@ import { directorApi, login, setCsrf, type SessionInfo } from '../lib/api';
 import { Logo } from '../components/Logo';
 import { Alert, Button, Field, Modal, PageLoader, PasswordStrength, ThemeToggle } from '../components/ui';
 import { LangSwitch } from '../components/LangSwitch';
+import { MadeBy } from '../components/MadeBy';
 
 interface PublicStatus {
   ownerRegistered: boolean;
@@ -43,6 +44,7 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle?: st
           <div className="mt-6">{children}</div>
         </div>
       </motion.div>
+      <MadeBy className="absolute inset-x-0 bottom-4" />
     </div>
   );
 }

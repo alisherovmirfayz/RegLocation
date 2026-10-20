@@ -9,6 +9,7 @@ import { Logo } from '../components/Logo';
 import { Avatar } from '../components/Avatar';
 import { Alert, Button, PageLoader, ThemeToggle } from '../components/ui';
 import { LangSwitch } from '../components/LangSwitch';
+import { MadeBy } from '../components/MadeBy';
 import { TeacherHome } from './TeacherHome';
 import { TeacherSchedule } from './TeacherSchedule';
 import { TeacherProfile } from './TeacherProfile';
@@ -83,6 +84,7 @@ function TeacherLogin({ onDone }: { onDone: (s: SessionInfo) => void }) {
         </div>
         <p className="mt-6 text-center text-xs text-slate-400">Самостоятельной регистрации нет. Забыли пароль — обратитесь к директору.</p>
       </motion.form>
+      <MadeBy className="relative mt-8" />
     </div>
   );
 }

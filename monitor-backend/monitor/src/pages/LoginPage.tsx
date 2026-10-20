@@ -5,6 +5,7 @@ import { Loader2, Lock, MonitorSmartphone, User } from 'lucide-react';
 import { login } from '../lib/api';
 import { Logo } from '../components/Logo';
 import { LangSwitch } from '../components/LangSwitch';
+import { MadeBy } from '../components/MadeBy';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ export function LoginPage() {
           {busy && <Loader2 className="h-4 w-4 animate-spin" />} Войти в монитор
         </button>
       </motion.form>
+      <MadeBy className="absolute inset-x-0 bottom-5" />
     </div>
   );
 }

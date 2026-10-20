@@ -6,6 +6,7 @@ import { teacherApi } from '../lib/api';
 import { REASON_LABEL, KIND_LABEL, awayText, periodText, fmtTime, type AwayPlace, type TeacherState } from '../lib/types';
 import { Avatar } from '../components/Avatar';
 import { Alert, Badge, Button, Modal, useToast } from '../components/ui';
+import { MadeBy } from '../components/MadeBy';
 
 /** Варианты «На сколько» для кнопки «Отошёл» (минуты) */
 const AWAY_DURATIONS = [5, 10, 15, 30, 45, 60, 90, 120, 180];
@@ -254,6 +255,7 @@ export function TeacherHome({ state, onState }: { state: TeacherState; onState: 
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Местоположение на мониторе — расчётное, по расписанию и назначениям директора. GPS не используется. В 17:00 отметка автоматически снимается.
       </p>
+      <MadeBy className="pb-2 pt-1" />
 
       {/* «Отошёл»: куда и на сколько */}
       <Modal open={awayOpen} onClose={() => setAwayOpen(false)} title="Отошёл">
