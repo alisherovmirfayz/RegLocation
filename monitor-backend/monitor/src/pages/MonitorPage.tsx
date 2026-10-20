@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, Info, LogOut, Trophy, Users, Utensils, Wifi, WifiOff } from 'lucide-react';
+import { Baby, Building2, CalendarClock, ChevronLeft, ChevronRight, FlaskConical, Info, LogOut, Trophy, Users, Utensils, Wifi, WifiOff } from 'lucide-react';
 import { useLive, type ConnectionState, type LiveEvent } from '../lib/useLive';
 import { logout } from '../lib/api';
 import type { Snapshot } from '../lib/types';
@@ -129,12 +129,13 @@ const VIEWS = [
   { kind: 'SCHOOL', label: 'Школа', Icon: Building2, pill: 'bg-brand-600 shadow-brand-600/30' },
   { kind: 'CANTEEN', label: 'Столовая', Icon: Utensils, pill: 'bg-orange-500 shadow-orange-500/30' },
   { kind: 'STADIUM', label: 'Стадион', Icon: Trophy, pill: 'bg-emerald-600 shadow-emerald-600/30' },
+  { kind: 'KINDERGARTEN', label: 'Детский сад', Icon: Baby, pill: 'bg-pink-500 shadow-pink-500/30' },
 ] as const;
 
 export function MonitorPage() {
   const navigate = useNavigate();
   const { snapshot, connection, events, receivedAt } = useLive(() => navigate('/monitor/login', { replace: true }));
-  const [view, setView] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM'>('SCHOOL');
+  const [view, setView] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN'>('SCHOOL');
   const [focusId, setFocusId] = useState<string | null>(null);
   const [epochs, setEpochs] = useState(new Map<string, number>());
   const prevRooms = useRef(new Map<string, string | null>());
@@ -227,6 +228,7 @@ export function MonitorPage() {
           <div className="ambient bottom-[-25%] right-[10%] h-[55vh] w-[45vw] bg-sky-400/15 dark:bg-indigo-500/20" style={{ animationDelay: '-14s' }} />
           {view === 'CANTEEN' && <div className="ambient left-[30%] top-[30%] h-[40vh] w-[40vw] bg-orange-400/15" style={{ animationDelay: '-7s' }} />}
           {view === 'STADIUM' && <div className="ambient left-[30%] top-[30%] h-[40vh] w-[40vw] bg-emerald-400/15" style={{ animationDelay: '-7s' }} />}
+          {view === 'KINDERGARTEN' && <div className="ambient left-[30%] top-[30%] h-[40vh] w-[40vw] bg-pink-400/15" style={{ animationDelay: '-7s' }} />}
         </div>
       )}
 

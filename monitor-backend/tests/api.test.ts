@@ -558,6 +558,32 @@ describe('Стадион', () => {
   });
 });
 
+describe('Детский сад', () => {
+  it('отдельное здание по чертежу; учительская школы остаётся основной; удалённое не возвращается', async () => {
+    type B = { id: string; kind: string; floors: { id: string; height: number; rooms: { code: string; name: string; type: string }[] }[] };
+    const kg = ((await director.get('/api/director/buildings')).body as B[]).find((b) => b.kind === 'KINDERGARTEN')!;
+    expect(kg).toBeTruthy();
+    const rooms = kg.floors.flatMap((f) => f.rooms);
+    expect(kg.floors[0]!.height).toBe(680);
+    // Номера 301–309 заняты школой: коды DS-…, на схеме — «301»
+    expect(rooms.find((r) => r.code === 'DS-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
+    expect(rooms.filter((r) => /^DS-30\d$/.test(r.code))).toHaveLength(9);
+    expect(rooms.some((r) => r.name === 'Актовый зал')).toBe(true);
+    // Основная учительская (для свободного времени) — школьная
+    const snap = await h.server.ctx.live.snapshot();
+    expect(snap.buildings.map((b) => b.kind)).toContain('KINDERGARTEN');
+    const teachersRoom = snap.buildings.flatMap((b) => b.floors.flatMap((f) => f.rooms)).find((r) => r.code === 'TEACHERS');
+    expect(teachersRoom).toBeTruthy();
+
+    // Директор удалил детский сад — не появляется снова
+    await prisma.floor.deleteMany({ where: { buildingId: kg.id } });
+    await prisma.building.delete({ where: { id: kg.id } });
+    const { seedDefaults } = await import('../src/domain/seed');
+    await seedDefaults(prisma);
+    expect(await prisma.building.count({ where: { kind: 'KINDERGARTEN' } })).toBe(0);
+  });
+});
+
 describe('Просмотр логина и пароля директором', () => {
   it('учитель: пароль при создании и после «Выдать новый» можно посмотреть; в базе он зашифрован; просмотр в журнале', async () => {
     const created = await director.post('/api/director/teachers', { firstName: 'Пароль', lastName: 'Смотрелкин', positionTitle: 'Химия' });

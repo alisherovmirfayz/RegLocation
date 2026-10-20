@@ -8,7 +8,7 @@ import { Page, useLoad } from './common';
 export function FloorsRoomsPage() {
   const toast = useToast();
   const { data, reload } = useLoad(() => directorApi.get<Building[]>('/api/director/buildings'));
-  const [kind, setKind] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM'>('SCHOOL');
+  const [kind, setKind] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN'>('SCHOOL');
   const [addFloor, setAddFloor] = useState(false);
   const [floorForm, setFloorForm] = useState({ name: '', level: 7, position: 'top' as 'top' | 'bottom' });
   const [rename, setRename] = useState<{ id: string; name: string; level: number } | null>(null);
@@ -58,9 +58,9 @@ export function FloorsRoomsPage() {
       }
     >
       <div className="mb-4 flex rounded-xl bg-slate-100 p-1 dark:bg-white/5" style={{ width: 'fit-content' }}>
-        {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
+        {(['SCHOOL', 'CANTEEN', 'KINDERGARTEN'] as const).map((k) => (
           <button key={k} onClick={() => setKind(k)} className={`rounded-lg px-4 py-1.5 text-sm font-medium ${kind === k ? 'bg-white shadow dark:bg-slate-800' : 'text-slate-500'}`}>
-            {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Стадион'}
+            {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Детский сад'}
           </button>
         ))}
       </div>

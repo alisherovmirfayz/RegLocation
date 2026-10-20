@@ -44,7 +44,7 @@ export interface Floor {
 }
 export interface Building {
   id: string;
-  kind: 'SCHOOL' | 'CANTEEN' | 'STADIUM';
+  kind: 'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN';
   name: string;
   floors: Floor[];
 }
@@ -64,7 +64,7 @@ export interface Location {
   className?: string;
   lessonNumber?: number;
   mealKey?: 'lunch' | 'snack';
-  buildingKind: 'SCHOOL' | 'CANTEEN' | 'STADIUM' | null;
+  buildingKind: 'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN' | null;
   floorId: string | null;
   roomName: string | null;
   nextLesson?: { number: number; start: string; className: string; roomLabel: string } | null;
@@ -176,7 +176,7 @@ export interface RoomOption {
   name: string;
   type: RoomType;
   floor: string;
-  building: 'SCHOOL' | 'CANTEEN' | 'STADIUM';
+  building: 'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN';
 }
 
 export interface TimetableEntry {

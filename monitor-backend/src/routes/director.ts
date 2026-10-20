@@ -524,7 +524,7 @@ export function directorRouter(ctx: AppContext): Router {
     ah(async (req, res) => {
       const body = parse(
         z.object({
-          buildingKind: z.enum(['SCHOOL', 'CANTEEN', 'STADIUM']).default('SCHOOL'),
+          buildingKind: z.enum(['SCHOOL', 'CANTEEN', 'STADIUM', 'KINDERGARTEN']).default('SCHOOL'),
           name: z.string().trim().min(1, 'Введите название этажа').max(40),
           level: z.number().int().min(-5).max(50),
           position: z.enum(['top', 'bottom']).default('top'),

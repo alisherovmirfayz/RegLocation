@@ -29,7 +29,7 @@ type Drag = { id: string; kind: 'move' | 'resize'; startX: number; startY: numbe
 export function SchoolEditorPage() {
   const toast = useToast();
   const { data, reload } = useLoad(() => directorApi.get<Building[]>('/api/director/buildings'));
-  const [buildingKind, setBuildingKind] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM'>('SCHOOL');
+  const [buildingKind, setBuildingKind] = useState<'SCHOOL' | 'CANTEEN' | 'STADIUM' | 'KINDERGARTEN'>('SCHOOL');
   const [floorId, setFloorId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [floorSize, setFloorSize] = useState({ width: 1000, height: 420 });
@@ -204,7 +204,7 @@ export function SchoolEditorPage() {
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-white/5">
-          {(['SCHOOL', 'CANTEEN'] as const).map((k) => (
+          {(['SCHOOL', 'CANTEEN', 'KINDERGARTEN'] as const).map((k) => (
             <button
               key={k}
               disabled={dirty}
@@ -215,7 +215,7 @@ export function SchoolEditorPage() {
               }}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium ${buildingKind === k ? 'bg-white shadow dark:bg-slate-800' : 'text-slate-500'}`}
             >
-              {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Стадион'}
+              {k === 'SCHOOL' ? 'Школа' : k === 'CANTEEN' ? 'Столовая' : 'Детский сад'}
             </button>
           ))}
         </div>

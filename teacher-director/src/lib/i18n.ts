@@ -373,6 +373,8 @@ const UZ: Record<string, string> = {
   'За территорию школы': 'Maktab hududidan tashqariga',
   'Отмечено: вы отошли': 'Belgilandi: siz chiqib turibsiz',
   'Отмечено: вы вернулись': 'Belgilandi: siz qaytdingiz',
+  'Детский сад': 'Bolalar bog‘chasi',
+  'Актовый зал': 'Majlislar zali',
   'Дорогие учителя!': 'Hurmatli o‘qituvchilar!',
   'Не забудьте нажать кнопку «Я в школе»': '«Men maktabdaman» tugmasini bosishni unutmang',
   'Наведите камеру телефона на QR-код': 'Telefon kamerasini QR-kodga qarating',
