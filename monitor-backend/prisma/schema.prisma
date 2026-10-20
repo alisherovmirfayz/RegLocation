@@ -53,7 +53,7 @@ enum BuildingKind {
   SCHOOL
   CANTEEN
   STADIUM
-  KINDERGARTEN
+  SCHOOL2
 }
 
 enum TimetableStatus {
@@ -394,6 +394,6 @@ model SystemState {
   /// Стадион добавлен в схему (один раз; если директор удалит его — не возвращается).
   stadiumSeeded          Boolean   @default(false)
   /// Детский сад (отдельное здание) создан один раз; удалённый директором не возвращается
-  kindergartenSeeded     Boolean   @default(false)
+  school2Seeded     Boolean   @default(false)
   updatedAt              DateTime  @updatedAt
 }

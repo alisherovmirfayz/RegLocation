@@ -150,7 +150,7 @@ export async function seedDefaults(prisma: PrismaClient): Promise<void> {
   const existing = await prisma.building.count();
   if (existing > 0) {
     await ensureStadium(prisma);
-    return ensureKindergarten(prisma);
+    return ensureSchool2(prisma);
   }
   await prisma.$transaction(
     async (tx) => {
@@ -163,7 +163,7 @@ export async function seedDefaults(prisma: PrismaClient): Promise<void> {
   );
   logger.info('Создана схема школы по умолчанию');
   await ensureStadium(prisma);
-  await ensureKindergarten(prisma);
+  await ensureSchool2(prisma);
 }
 
 /**
@@ -212,55 +212,55 @@ async function moveStadiumIntoSchool(prisma: PrismaClient): Promise<void> {
 }
 
 /**
- * Детский сад — отдельное здание (чертёж директора): актовый зал, учительская, группы 301–309,
- * туалеты, лестница. Номера 301–309 уже заняты в школе, поэтому коды — DS-301…, а на схеме видно «301».
+ * Второе здание школы (чертёж директора), 3 этаж: актовый зал, учительская, кабинеты 301–309,
+ * туалеты, лестница. Номера 301–309 уже заняты в основном здании, поэтому коды — 2-301…, а на схеме видно «301».
  */
-export const DEFAULT_KINDERGARTEN: FloorSeed = {
-  name: 'Детский сад',
-  level: 1,
+export const DEFAULT_SCHOOL2: FloorSeed = {
+  name: '3 этаж',
+  level: 3,
   height: 760,
   rooms: [
-    { code: 'DS-AKT', name: 'Актовый зал', type: 'OTHER', x: 20, y: 20, width: 170, height: 340 },
-    { code: 'DS-305', name: '305', type: 'CLASSROOM', x: 190, y: 20, width: 145, height: 190 },
-    { code: 'DS-TEACHERS', name: 'Учительская', type: 'TEACHERS_ROOM', x: 190, y: 210, width: 145, height: 150 },
-    { code: 'DS-CORRIDOR2', name: 'Коридор', type: 'CORRIDOR', x: 335, y: 20, width: 65, height: 340 },
-    { code: 'DS-304', name: '304', type: 'CLASSROOM', x: 400, y: 20, width: 120, height: 155 },
-    { code: 'DS-303', name: '303', type: 'CLASSROOM', x: 520, y: 20, width: 120, height: 155 },
-    { code: 'DS-WC', name: 'Туалет М', type: 'OTHER', x: 400, y: 175, width: 120, height: 95 },
-    { code: 'DS-WC2', name: 'Туалет Ж', type: 'OTHER', x: 520, y: 175, width: 120, height: 95 },
-    { code: 'DS-CORRIDOR3', name: 'Коридор', type: 'CORRIDOR', x: 640, y: 20, width: 80, height: 340 },
-    { code: 'DS-CORRIDOR5', name: 'Коридор', type: 'CORRIDOR', x: 400, y: 270, width: 240, height: 90 },
-    { code: 'DS-302', name: '302', type: 'CLASSROOM', x: 720, y: 20, width: 260, height: 205 },
-    { code: 'DS-301', name: '301', type: 'CLASSROOM', x: 720, y: 225, width: 260, height: 160 },
-    { code: 'DS-STAIRS', name: 'Лестница', type: 'STAIRS', x: 745, y: 385, width: 235, height: 135 },
-    { code: 'DS-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 20, y: 360, width: 725, height: 160 },
-    { code: 'DS-306', name: '306', type: 'CLASSROOM', x: 20, y: 520, width: 170, height: 70 },
-    { code: 'DS-307', name: '307', type: 'CLASSROOM', x: 20, y: 590, width: 170, height: 70 },
-    { code: 'DS-CORRIDOR4', name: 'Коридор', type: 'CORRIDOR', x: 190, y: 520, width: 150, height: 140 },
-    { code: 'DS-308', name: '308', type: 'CLASSROOM', x: 20, y: 660, width: 170, height: 90 },
-    { code: 'DS-309', name: '309', type: 'CLASSROOM', x: 190, y: 660, width: 150, height: 90 },
+    { code: '2-AKT', name: 'Актовый зал', type: 'OTHER', x: 20, y: 20, width: 170, height: 340 },
+    { code: '2-305', name: '305', type: 'CLASSROOM', x: 190, y: 20, width: 145, height: 190 },
+    { code: '2-TEACHERS', name: 'Учительская', type: 'TEACHERS_ROOM', x: 190, y: 210, width: 145, height: 150 },
+    { code: '2-CORRIDOR2', name: 'Коридор', type: 'CORRIDOR', x: 335, y: 20, width: 65, height: 340 },
+    { code: '2-304', name: '304', type: 'CLASSROOM', x: 400, y: 20, width: 120, height: 155 },
+    { code: '2-303', name: '303', type: 'CLASSROOM', x: 520, y: 20, width: 120, height: 155 },
+    { code: '2-WC', name: 'Туалет М', type: 'OTHER', x: 400, y: 175, width: 120, height: 95 },
+    { code: '2-WC2', name: 'Туалет Ж', type: 'OTHER', x: 520, y: 175, width: 120, height: 95 },
+    { code: '2-CORRIDOR3', name: 'Коридор', type: 'CORRIDOR', x: 640, y: 20, width: 80, height: 340 },
+    { code: '2-CORRIDOR5', name: 'Коридор', type: 'CORRIDOR', x: 400, y: 270, width: 240, height: 90 },
+    { code: '2-302', name: '302', type: 'CLASSROOM', x: 720, y: 20, width: 260, height: 205 },
+    { code: '2-301', name: '301', type: 'CLASSROOM', x: 720, y: 225, width: 260, height: 160 },
+    { code: '2-STAIRS', name: 'Лестница', type: 'STAIRS', x: 745, y: 385, width: 235, height: 135 },
+    { code: '2-CORRIDOR', name: 'Коридор', type: 'CORRIDOR', x: 20, y: 360, width: 725, height: 160 },
+    { code: '2-306', name: '306', type: 'CLASSROOM', x: 20, y: 520, width: 170, height: 70 },
+    { code: '2-307', name: '307', type: 'CLASSROOM', x: 20, y: 590, width: 170, height: 70 },
+    { code: '2-CORRIDOR4', name: 'Коридор', type: 'CORRIDOR', x: 190, y: 520, width: 150, height: 140 },
+    { code: '2-308', name: '308', type: 'CLASSROOM', x: 20, y: 660, width: 170, height: 90 },
+    { code: '2-309', name: '309', type: 'CLASSROOM', x: 190, y: 660, width: 150, height: 90 },
   ],
 };
 
-/** Детский сад добавляется один раз (и в уже работающие школы); если директор удалит здание — не возвращается. */
-async function ensureKindergarten(prisma: PrismaClient): Promise<void> {
-  const state = await prisma.systemState.findUnique({ where: { id: 1 }, select: { kindergartenSeeded: true } });
-  if (state?.kindergartenSeeded) return;
+/** Второе здание добавляется один раз (и в уже работающие школы); если директор удалит здание — не возвращается. */
+async function ensureSchool2(prisma: PrismaClient): Promise<void> {
+  const state = await prisma.systemState.findUnique({ where: { id: 1 }, select: { school2Seeded: true } });
+  if (state?.school2Seeded) return;
   const created = await prisma.$transaction(
     async (tx) => {
       // Условная отметка: при одновременном запуске нескольких экземпляров здание создаст только один
-      const claimed = await tx.systemState.updateMany({ where: { id: 1, kindergartenSeeded: false }, data: { kindergartenSeeded: true } });
+      const claimed = await tx.systemState.updateMany({ where: { id: 1, school2Seeded: false }, data: { school2Seeded: true } });
       if (claimed.count === 0) return false;
-      if (await tx.building.findFirst({ where: { kind: 'KINDERGARTEN' } })) return false;
+      if (await tx.building.findFirst({ where: { kind: 'SCHOOL2' } })) return false;
       // Коды комнат уникальны во всей базе: занятые не трогаем
-      const taken = new Set((await tx.room.findMany({ where: { code: { in: DEFAULT_KINDERGARTEN.rooms.map((r) => r.code) } }, select: { code: true } })).map((r) => r.code));
-      const kg = await tx.building.create({ data: { kind: 'KINDERGARTEN', name: 'Детский сад' } });
-      await createFloor(tx as PrismaClient, kg.id, { ...DEFAULT_KINDERGARTEN, rooms: DEFAULT_KINDERGARTEN.rooms.filter((r) => !taken.has(r.code)) }, 0);
+      const taken = new Set((await tx.room.findMany({ where: { code: { in: DEFAULT_SCHOOL2.rooms.map((r) => r.code) } }, select: { code: true } })).map((r) => r.code));
+      const b2 = await tx.building.create({ data: { kind: 'SCHOOL2', name: 'Второе здание' } });
+      await createFloor(tx as PrismaClient, b2.id, { ...DEFAULT_SCHOOL2, rooms: DEFAULT_SCHOOL2.rooms.filter((r) => !taken.has(r.code)) }, 0);
       return true;
     },
     { timeout: 30_000 },
   );
   if (!created) return;
   await prisma.systemState.update({ where: { id: 1 }, data: { dataVersion: { increment: 1 } } });
-  logger.info('Добавлен детский сад');
+  logger.info('Добавлено второе здание школы');
 }

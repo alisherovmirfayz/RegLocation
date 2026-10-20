@@ -225,12 +225,22 @@ export function BuildingMap({
             className={`pointer-events-none absolute rounded-[3px] ${occupants && highlightOccupied ? 'room-glow' : ''}`}
             style={{ left: x, top: y, width: w, height: h }}
           >
-            <div className={`flex items-start justify-between gap-1 px-2 pt-1.5 ${passive ? 'opacity-60' : ''}`}>
+            <div className={`flex items-start justify-between gap-1 overflow-hidden px-2 pt-1.5 ${passive ? 'opacity-60' : ''}`} style={{ maxHeight: h }}>
+              {/* Подпись не выходит за комнату: в узком вертикальном коридоре — вертикально */}
               {room.type === 'CORRIDOR' ? (
-                <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">{room.name}</span>
+                h > w * 1.3 && w < 120 ? (
+                  <span
+                    className="mx-auto overflow-hidden whitespace-nowrap text-[10px] font-medium uppercase tracking-widest text-slate-400 [writing-mode:vertical-rl] dark:text-slate-500"
+                    style={{ maxHeight: h - 12 }}
+                  >
+                    {room.name}
+                  </span>
+                ) : (
+                  <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">{room.name}</span>
+                )
               ) : (
                 <span
-                  className={`truncate rounded-md px-1.5 py-0.5 font-semibold shadow-sm ${w < 110 ? 'text-[10px]' : 'text-xs'} ${passive ? 'bg-transparent text-slate-500 shadow-none dark:text-slate-400' : 'bg-white/90 text-slate-700 dark:bg-slate-900/80 dark:text-slate-100'}`}
+                  className={`min-w-0 truncate rounded-md px-1.5 py-0.5 font-semibold shadow-sm ${w < 110 ? 'text-[10px]' : 'text-xs'} ${passive ? 'bg-transparent text-slate-500 shadow-none dark:text-slate-400' : 'bg-white/90 text-slate-700 dark:bg-slate-900/80 dark:text-slate-100'}`}
                 >
                   {room.name}
                 </span>

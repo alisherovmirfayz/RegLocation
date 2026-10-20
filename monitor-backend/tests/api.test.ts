@@ -558,29 +558,29 @@ describe('Стадион', () => {
   });
 });
 
-describe('Детский сад', () => {
+describe('Второе здание школы', () => {
   it('отдельное здание по чертежу; учительская школы остаётся основной; удалённое не возвращается', async () => {
     type B = { id: string; kind: string; floors: { id: string; height: number; rooms: { code: string; name: string; type: string }[] }[] };
-    const kg = ((await director.get('/api/director/buildings')).body as B[]).find((b) => b.kind === 'KINDERGARTEN')!;
-    expect(kg).toBeTruthy();
-    const rooms = kg.floors.flatMap((f) => f.rooms);
-    expect(kg.floors[0]!.height).toBe(760);
-    // Номера 301–309 заняты школой: коды DS-…, на схеме — «301»
-    expect(rooms.find((r) => r.code === 'DS-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
-    expect(rooms.filter((r) => /^DS-30\d$/.test(r.code))).toHaveLength(9);
+    const b2 = ((await director.get('/api/director/buildings')).body as B[]).find((b) => b.kind === 'SCHOOL2')!;
+    expect(b2).toBeTruthy();
+    const rooms = b2.floors.flatMap((f) => f.rooms);
+    expect(b2.floors[0]!).toMatchObject({ height: 760, name: '3 этаж' });
+    // Номера 301–309 заняты в основном здании: коды 2-…, на схеме — «301»
+    expect(rooms.find((r) => r.code === '2-301')).toMatchObject({ name: '301', type: 'CLASSROOM' });
+    expect(rooms.filter((r) => /^2-30\d$/.test(r.code))).toHaveLength(9);
     expect(rooms.some((r) => r.name === 'Актовый зал')).toBe(true);
     // Основная учительская (для свободного времени) — школьная
     const snap = await h.server.ctx.live.snapshot();
-    expect(snap.buildings.map((b) => b.kind)).toContain('KINDERGARTEN');
+    expect(snap.buildings.map((b) => b.kind)).toContain('SCHOOL2');
     const teachersRoom = snap.buildings.flatMap((b) => b.floors.flatMap((f) => f.rooms)).find((r) => r.code === 'TEACHERS');
     expect(teachersRoom).toBeTruthy();
 
-    // Директор удалил детский сад — не появляется снова
-    await prisma.floor.deleteMany({ where: { buildingId: kg.id } });
-    await prisma.building.delete({ where: { id: kg.id } });
+    // Директор удалил второе здание — не появляется снова
+    await prisma.floor.deleteMany({ where: { buildingId: b2.id } });
+    await prisma.building.delete({ where: { id: b2.id } });
     const { seedDefaults } = await import('../src/domain/seed');
     await seedDefaults(prisma);
-    expect(await prisma.building.count({ where: { kind: 'KINDERGARTEN' } })).toBe(0);
+    expect(await prisma.building.count({ where: { kind: 'SCHOOL2' } })).toBe(0);
   });
 });
 
