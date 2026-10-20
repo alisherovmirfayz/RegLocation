@@ -142,6 +142,8 @@ export function BuildingMap({
     let top = PAD;
     let rowHeight = 0;
     const rooms = new Map<string, { room: Room; x: number; y: number; w: number; h: number }>();
+    // Один масштаб на всё здание: этажи разной высоты (3 этаж и бассейн) остаются одной ширины
+    const scaleAll = Math.min(...floors.map((f) => Math.min(colW / f.width, maxFloorHeight ? maxFloorHeight / f.height : Infinity)));
     const floorBoxes = floors.map((f, i) => {
       const col = i % cols;
       // Новый ряд этажей начинается ниже самого высокого этажа предыдущего ряда
@@ -149,7 +151,7 @@ export function BuildingMap({
         top += rowHeight + FLOOR_GAP;
         rowHeight = 0;
       }
-      const fw = maxFloorHeight ? Math.min(colW, (maxFloorHeight * f.width) / f.height) : colW;
+      const fw = f.width * scaleAll;
       const left = PAD + col * (colW + colGap) + (colW - fw) / 2;
       const scale = fw / f.width;
       const h = f.height * scale;
