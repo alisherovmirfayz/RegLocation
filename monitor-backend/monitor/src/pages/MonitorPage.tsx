@@ -203,6 +203,9 @@ export function MonitorPage() {
 
   const building = useMemo(() => snapshot?.buildings.find((b) => b.kind === view), [snapshot, view]);
   const multiFloor = (building?.floors.length ?? 0) > 1;
+  // Колонки: 2, когда список учителей закрыт. Если все этажи помещаются в один ряд — они на всю высоту экрана
+  const mapColumns = listOpen || !multiFloor ? 1 : 2;
+  const oneRow = Math.ceil((building?.floors.length ?? 1) / mapColumns) <= 1;
   const countIn = (kind: string) => snapshot?.teachers.filter((t) => t.present && t.location.buildingKind === kind).length ?? 0;
   // Вкладки зданий; стадион — часть школы, отдельная вкладка показывается только для старой схемы
   const views = VIEWS.filter((v) => snapshot?.buildings.some((b) => b.kind === v.kind));
@@ -335,8 +338,8 @@ export function MonitorPage() {
                     scrollRef={scrollRef}
                     epochs={epochs}
                     // Здания с несколькими этажами (школа, второе здание) — по 2 этажа в ряд; один этаж (столовая) — крупно, на весь экран
-                    maxFloorHeight={multiFloor ? Math.max(240, (window.innerHeight - 260) / 2) : Math.max(300, window.innerHeight - 330)}
-                    columns={listOpen || !multiFloor ? 1 : 2}
+                    maxFloorHeight={oneRow ? Math.max(300, window.innerHeight - 330) : Math.max(240, (window.innerHeight - 260) / 2)}
+                    columns={mapColumns}
                   />
                 </motion.div>
               )}
